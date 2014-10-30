@@ -337,12 +337,12 @@ void ZActor_Player::Action_MouseButtonClick(ULong Button)
   ZTool * Tool;
   if (IsDead) return;
 
-  if( Button == 3 && GameEnv->EventManager.Is_KeyPressed( SDLK_LSHIFT, 0 ) )
+  if( Button == 3 && GameEnv->EventManager.Is_KeyPressed( SDLK_LSHIFT&0xFF, 0 ) )
   {
 	  VoxelSelectDistance++;
 	  return;
   }
-  if( Button == 4 && GameEnv->EventManager.Is_KeyPressed( SDLK_LSHIFT, 0 ) )
+  if( Button == 4 && GameEnv->EventManager.Is_KeyPressed( SDLK_LSHIFT&0xFF, 0 ) )
   {
 	  VoxelSelectDistance--;
 	  return;
@@ -999,10 +999,10 @@ void ZActor_Player::DoPhysic_Plane(double CycleTime)
     if (ViewDirection.origin().y > (500.0 * GlobalSettings.VoxelBlockSize) )
 	{
 		Camera.ColoredVision.Activate= true; 
-		Camera.ColoredVision.Red = 0.8; 
+		Camera.ColoredVision.Red = 0.8f; 
 		Camera.ColoredVision.Green = 0.0; 
 		Camera.ColoredVision.Blue = 0.0; 
-		Camera.ColoredVision.Opacity = 0.3;
+		Camera.ColoredVision.Opacity = 0.3f;
 	}
     //ViewDirection.pitch = 270.0;
     //ViewDirection.roll = 0.0;
@@ -1041,7 +1041,7 @@ void ZActor_Player::DoPhysic_Plane(double CycleTime)
 
 
   In.Camera = 0;
-  In.MaxCubeIterations = ceil(DepLen / 256)+5; // 6;
+  In.MaxCubeIterations = (ULong)ceil(DepLen / 256)+5; // 6;
   In.PlaneCubeDiff = In.MaxCubeIterations - 3;
   In.MaxDetectionDistance = 3000000.0;
 
@@ -1202,10 +1202,7 @@ void ZActor_Player::DoPhysic_Plane_Old(double CycleTime)
   //ZPolar3d Direction = ViewDirection;
   ZVector3d CDir;
   //Direction.Len = 1.0;
-  CDir = ViewDirection.z_axis();
-  CDir.x *= -1;
-  CDir.y *= -1;
-  CDir.z *= -1;
+  CDir = ViewDirection.z_axis() * -1;
   Velocity = CDir * 10 * 400.0;
 
   // Deplacement computation
@@ -1240,7 +1237,7 @@ void ZActor_Player::DoPhysic_Plane_Old(double CycleTime)
 
 
   In.Camera = 0;
-  In.MaxCubeIterations = ceil(DepLen / 256)+5; // 6;
+  In.MaxCubeIterations = (ULong)ceil(DepLen / 256)+5; // 6;
   In.PlaneCubeDiff = In.MaxCubeIterations - 3;
   In.MaxDetectionDistance = 3000000.0;
 
@@ -2000,7 +1997,7 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
 
 
   In.Camera = 0;
-  In.MaxCubeIterations = ceil(DepLen / 256)+5; // 6;
+  In.MaxCubeIterations = (ULong)ceil(DepLen / 256)+5; // 6;
   In.PlaneCubeDiff = In.MaxCubeIterations - 3;
   In.MaxDetectionDistance = 3000000.0;
   double DistanceMin;
@@ -2361,7 +2358,7 @@ void ZActor_Player::DoPhysic_SupermanPlayer(double CycleTime)
 
 
   In.Camera = 0;
-  In.MaxCubeIterations = ceil(DepLen / 256)+5; // 6;
+  In.MaxCubeIterations = (ULong)ceil(DepLen / 256)+5; // 6;
   In.PlaneCubeDiff = In.MaxCubeIterations - 3;
   In.MaxDetectionDistance = 3000000.0;
   double DistanceMin;

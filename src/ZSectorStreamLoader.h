@@ -89,16 +89,15 @@
 
 
 
+#include "ZGame.h"
 
 
-
-class ZGame;
-
-
+class ZWorldGenesis;
 
 
 class ZFileSectorLoader : public ZSectorLoader
 {
+public:
     static UByte STableX[];
     static UByte STableZ[];
     static UByte STableY[];
@@ -106,7 +105,8 @@ class ZFileSectorLoader : public ZSectorLoader
     static UShort OfTableY [];
     static UShort OfTableX [];
     static UShort OfTableZ [];
-
+private:
+	ZGame *GameEnv;
   protected:
     void * Thread;
     Bool   ThreadContinue;
@@ -126,10 +126,10 @@ class ZFileSectorLoader : public ZSectorLoader
 
     bool                   LoadSector(Long x, Long y, Long z);
 
-    ZWorldGenesis          SectorCreator;
+    ZWorldGenesis          *SectorCreator;
   public:
 
-    ZFileSectorLoader();
+    ZFileSectorLoader( ZGame *GameEnv);
     virtual                ~ZFileSectorLoader();
 
     virtual bool           Init();

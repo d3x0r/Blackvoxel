@@ -35,7 +35,9 @@
 #endif
 
 #ifndef Z_ZRENDER_BASIC_H
+#  include "ZRender_Interface.h"
 #  include "ZRender_Basic.h"
+#  include "ZRender_Smooth.h"
 #endif
 
 #ifndef Z_ZWORLD_STAT_H
@@ -117,7 +119,7 @@ Bool ZGame_Events::KeyDown( UShort KeySym )
                     if (!GameEnv->Settings_Hardware->Experimental_LearningMode) break;
                     ULong SlotNum = 20;
                     ZInventory * Inv = Actor->Inventory;
-					if (KeySym == SDLK_k & 0xFF) Actor->LearningModePage++;
+					if (KeySym == (SDLK_k & 0xFF)) Actor->LearningModePage++;
                     else                {if((Actor->LearningModePage--)==0) Actor->LearningModePage = 2; }
 
                     switch (Actor->LearningModePage)
@@ -325,7 +327,7 @@ void ZGame_Events::Process_StillEvents()
 	if (Keyboard_Matrix[SDLK_KP7 & 0xFF] && COMPILEOPTION_DEBUGFACILITY)
     {
       //GameEnv->Sound->PlaySound(1);
-      GameEnv->Sound->Start_PlaySound(1,false,0.125,0);
+      GameEnv->Sound->Start_PlaySound(1,false,true,0.125,0);
 	  Keyboard_Matrix[SDLK_KP7 & 0xFF] = 0;
 	  printf("x,y,z : %lf,%lf,%lf\n",Actor->ViewDirection.origin().x, Actor->ViewDirection.origin().y, Actor->ViewDirection.origin().z);
 
@@ -807,7 +809,7 @@ void ZGame_Events::Process_StillEvents()
             for (y=0;y<=2;y++)
               for (z=-5;z<=5;z++)
           {
-            GameEnv->World->SectorUpdateFaceCulling(x,y,z,false);
+            //GameEnv->World->SectorUpdateFaceCulling(x,y,z,false);
             Sector = GameEnv->World->FindSector(x,y,z);
             Sector->Flag_Render_Dirty = true;
             Sector->Flag_Void_Regular = true;
@@ -826,7 +828,9 @@ void ZGame_Events::Process_StillEvents()
 
       Actor = GameEnv->PhysicEngine->GetSelectedActor();
 
-      Position.x = Actor->ViewDirection.origin().x/GlobalSettings.VoxelBlockSize; Position.y = Actor->ViewDirection.origin().y/GlobalSettings.VoxelBlockSize; Position.z = Actor->ViewDirection.origin().z/GlobalSettings.VoxelBlockSize;
+      Position.x = (Long)(Actor->ViewDirection.origin().x/GlobalSettings.VoxelBlockSize); 
+	  Position.y = (Long)(Actor->ViewDirection.origin().y/GlobalSettings.VoxelBlockSize); 
+	  Position.z = (Long)(Actor->ViewDirection.origin().z/GlobalSettings.VoxelBlockSize);
       Sector.x = Position.x >> 4; Sector.y = Position.y >> 6; Sector.z = Position.z >> 4;
       Zone.x = Position.x >> GlobalSettings.VoxelBlockSizeBits; Zone.y = 0; Zone.z = Position.z >> GlobalSettings.VoxelBlockSizeBits;
 
@@ -990,7 +994,7 @@ void ZGame_Events::Process_StillEvents()
 
           Loc.Sector->BlitSector(&Sector, &Offset );
 
-          GameEnv->World->SectorUpdateFaceCulling(Loc.Sector->Pos_x, Loc.Sector->Pos_y, Loc.Sector->Pos_z , false);
+          //GameEnv->World->SectorUpdateFaceCulling(Loc.Sector->Pos_x, Loc.Sector->Pos_y, Loc.Sector->Pos_z , false);
 
           Loc.Sector->Flag_Render_Dirty = true;
           Loc.Sector->Flag_IsDebug = true;

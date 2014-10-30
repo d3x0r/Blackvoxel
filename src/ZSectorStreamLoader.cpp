@@ -78,16 +78,20 @@ ZSectorLoader::~ZSectorLoader()
 {
 }
 
-ZFileSectorLoader::ZFileSectorLoader()
+ZFileSectorLoader::ZFileSectorLoader( ZGame *GameEnv )
 {
+	this->GameEnv = GameEnv;
+	SectorCreator = new ZWorldGenesis( GameEnv );
   ReadySectorList   = new ZSectorRingList(1024*1024);
   EjectedSectorList = new ZSectorRingList(1024*1024);
   SectorRecycling   = new ZSectorRingList(1024*1024);
   VoxelTypeManager = 0;
   UniverseNum = 1;
   WorkingEmptySector = new ZVoxelSector;
+  GameEnv->Basic_Renderer->GetCuller()->InitFaceCullData( WorkingEmptySector );
   WorkingEmptySector->Fill(0);
   WorkingFullSector = new ZVoxelSector;
+  GameEnv->Basic_Renderer->GetCuller()->InitFaceCullData( WorkingFullSector );
   WorkingFullSector->Fill(1);
   Thread = 0;
   ThreadContinue = false;
@@ -131,7 +135,7 @@ bool ZFileSectorLoader::Init()
 {
   ThreadContinue = true;
   Thread = (SDL_Thread * )SDL_CreateThread(thread_func, "thread_func", this);
-  if (!SectorCreator.LoadTemplateImages()) return(false);
+  if (!SectorCreator->LoadTemplateImages()) return(false);
   return(true);
 }
 
@@ -143,7 +147,9 @@ bool ZFileSectorLoader::LoadSector(Long x, Long y, Long z)
   if ( !RequestTag.find(x,y,z) )
   {
     NewSector = SectorRecycling->PullFromList(); // Try recycling some old used sector.
-    if (!NewSector) {NewSector = new ZVoxelSector; }
+    if (!NewSector) {
+		NewSector = new ZVoxelSector( GameEnv->Basic_Renderer->GetCuller() ); 
+	}
 
     TryLoad = true;
     do
@@ -167,7 +173,7 @@ bool ZFileSectorLoader::LoadSector(Long x, Long y, Long z)
       }
       else
       {
-        SectorCreator.GenerateSector(NewSector);
+        SectorCreator->GenerateSector(NewSector);
       }
     } while (Redo);
 
@@ -280,18 +286,18 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
 
   for (i=0;i<27;i++) SectorTable[i] = WorkingFullSector;
   SectorTable[0] = Sector;
-  SectorTable[1] = WorkingFullSector;
-  SectorTable[2] = WorkingFullSector;
-  SectorTable[3] = WorkingFullSector;
-  SectorTable[6] = WorkingFullSector;
-  SectorTable[9] = WorkingFullSector;
-  SectorTable[18]= WorkingFullSector;
+  //SectorTable[1] = WorkingFullSector;
+  //SectorTable[2] = WorkingFullSector;
+  //SectorTable[3] = WorkingFullSector;
+  //SectorTable[6] = WorkingFullSector;
+  //SectorTable[9] = WorkingFullSector;
+  //SectorTable[18]= WorkingFullSector;
 
   Long xc,yc,zc;
   Long xp,yp,zp;
   Long xpp,ypp,zpp;
-  UByte info;
-  ZVoxelType * Vt[6];
+  ULong info;
+  ZVoxelType * Vt[6 + 12];
   Bool TransparentVoxel;
 
   VoxelTypeTable = VoxelTypeManager->VoxelTable;
@@ -304,14 +310,23 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
       zp = zc+1;zpp=zc+2;
 
       // Prefetching the bloc matrix (only 2 rows)
+	  // left/ahead (below)
       BlocMatrix[1][0] = SectorTable[(STableX[xc ]+STableY[0]+STableZ[zc ])]->Data[OfTableX[xc]+OfTableY[0]+OfTableZ[zc]];
+	  // center/ahead (below)
       BlocMatrix[1][1] = SectorTable[(STableX[xp ]+STableY[0]+STableZ[zc ])]->Data[OfTableX[xp]+OfTableY[0]+OfTableZ[zc]];
+	  // right/ahead (below)
       BlocMatrix[1][2] = SectorTable[(STableX[xpp]+STableY[0]+STableZ[zc ])]->Data[OfTableX[xpp]+OfTableY[0]+OfTableZ[zc]];
+	  // left/center (below)
       BlocMatrix[1][3] = SectorTable[(STableX[xc ]+STableY[0]+STableZ[zp ])]->Data[OfTableX[xc]+OfTableY[0]+OfTableZ[zp]];
+	  // cneter/center (below)
       BlocMatrix[1][4] = SectorTable[(STableX[xp ]+STableY[0]+STableZ[zp ])]->Data[OfTableX[xp]+OfTableY[0]+OfTableZ[zp]];
+	  // right/center (below)
       BlocMatrix[1][5] = SectorTable[(STableX[xpp]+STableY[0]+STableZ[zp ])]->Data[OfTableX[xpp]+OfTableY[0]+OfTableZ[zp]];
+	  // left/behind (below)
       BlocMatrix[1][6] = SectorTable[(STableX[xc ]+STableY[0]+STableZ[zpp])]->Data[OfTableX[xc]+OfTableY[0]+OfTableZ[zpp]];
+	  // center/behind (below)
       BlocMatrix[1][7] = SectorTable[(STableX[xp ]+STableY[0]+STableZ[zpp])]->Data[OfTableX[xp]+OfTableY[0]+OfTableZ[zpp]];
+	  // right/behind (below)
       BlocMatrix[1][8] = SectorTable[(STableX[xpp]+STableY[0]+STableZ[zpp])]->Data[OfTableX[xpp]+OfTableY[0]+OfTableZ[zpp]];
 
       BlocMatrix[2][0] = SectorTable[(STableX[xc ]+STableY[1]+STableZ[zc ])]->Data[OfTableX[xc ]+OfTableY[1]+OfTableZ[zc ]];
@@ -336,7 +351,7 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
 
         // Fetching a new bloc of data slice;
 
-        BlocMatrix[2][0] = SectorTable[(STableX[xc ]+STableY[ypp]+STableZ[zc ])]->Data[OfTableX[xc ]+OfTableY[ypp]+OfTableZ[zc ]];
+        BlocMatrix[2][0] = SectorTable[(STableX[xc ]+STableY[ypp]+STableZ[zc ])]->Data[OfTableX[xc ]+OfTableY[ypp]+OfTableZ[zc ]]; 
         BlocMatrix[2][1] = SectorTable[(STableX[xp ]+STableY[ypp]+STableZ[zc ])]->Data[OfTableX[xp ]+OfTableY[ypp]+OfTableZ[zc ]];
         BlocMatrix[2][2] = SectorTable[(STableX[xpp]+STableY[ypp]+STableZ[zc ])]->Data[OfTableX[xpp]+OfTableY[ypp]+OfTableZ[zc ]];
         BlocMatrix[2][3] = SectorTable[(STableX[xc ]+STableY[ypp]+STableZ[zp ])]->Data[OfTableX[xc ]+OfTableY[ypp]+OfTableZ[zp ]];
@@ -355,6 +370,20 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
           Vt[3] = VoxelTypeTable[BlocMatrix[1][5]];
           Vt[4] = VoxelTypeTable[BlocMatrix[0][4]];
           Vt[5] = VoxelTypeTable[BlocMatrix[2][4]];
+
+		  Vt[6] = VoxelTypeTable[BlocMatrix[0][1]];
+		  Vt[7] = VoxelTypeTable[BlocMatrix[0][7]];
+		  Vt[8] = VoxelTypeTable[BlocMatrix[2][1]];
+		  Vt[9] = VoxelTypeTable[BlocMatrix[2][7]];
+		  Vt[10] = VoxelTypeTable[BlocMatrix[0][3]];
+		  Vt[11] = VoxelTypeTable[BlocMatrix[0][5]];
+		  Vt[12] = VoxelTypeTable[BlocMatrix[2][3]];
+		  Vt[13] = VoxelTypeTable[BlocMatrix[2][5]];
+		  Vt[14] = VoxelTypeTable[BlocMatrix[1][0]];
+		  Vt[15] = VoxelTypeTable[BlocMatrix[1][2]];
+		  Vt[16] = VoxelTypeTable[BlocMatrix[1][6]];
+		  Vt[17] = VoxelTypeTable[BlocMatrix[1][8]];
+
           Temp = BlocMatrix[1][4];
           TransparentVoxel = VoxelTypeTable[Temp]->Draw_TransparentRendering;
 
@@ -364,6 +393,24 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
           info |= ( Vt[3]->Draw_FullVoxelOpacity || (TransparentVoxel && Vt[3]->Draw_TransparentRendering) ) ? 0 : DRAWFACE_RIGHT;
           info |= ( Vt[4]->Draw_FullVoxelOpacity || (TransparentVoxel && Vt[4]->Draw_TransparentRendering) ) ? 0 : DRAWFACE_BELOW;
           info |= ( Vt[5]->Draw_FullVoxelOpacity || (TransparentVoxel && Vt[5]->Draw_TransparentRendering) ) ? 0 : DRAWFACE_ABOVE;
+
+		  if( Temp )
+		  {
+			  //if( info & DRAWFACE_AHEAD )
+			  info |= ( Vt[6]->Draw_FullVoxelOpacity )?DRAWFACE_BELOW_HAS_AHEAD:0;
+			  info |= ( Vt[7]->Draw_FullVoxelOpacity )?DRAWFACE_BELOW_HAS_BEHIND:0;
+			  info |= ( Vt[8]->Draw_FullVoxelOpacity )?DRAWFACE_ABOVE_HAS_AHEAD:0;
+			  info |= ( Vt[9]->Draw_FullVoxelOpacity )?DRAWFACE_ABOVE_HAS_BEHIND:0;
+			  info |= ( Vt[10]->Draw_FullVoxelOpacity )?DRAWFACE_BELOW_HAS_LEFT:0;
+			  info |= ( Vt[11]->Draw_FullVoxelOpacity )?DRAWFACE_BELOW_HAS_RIGHT:0;
+			  info |= ( Vt[12]->Draw_FullVoxelOpacity )?DRAWFACE_ABOVE_HAS_LEFT:0;
+			  info |= ( Vt[13]->Draw_FullVoxelOpacity )?DRAWFACE_ABOVE_HAS_RIGHT:0;
+
+			  info |= ( Vt[14]->Draw_FullVoxelOpacity )?DRAWFACE_LEFT_HAS_AHEAD:0;
+			  info |= ( Vt[15]->Draw_FullVoxelOpacity )?DRAWFACE_RIGHT_HAS_AHEAD:0;
+			  info |= ( Vt[16]->Draw_FullVoxelOpacity )?DRAWFACE_LEFT_HAS_BEHIND:0;
+			  info |= ( Vt[17]->Draw_FullVoxelOpacity )?DRAWFACE_RIGHT_HAS_BEHIND:0;
+		  }
         }
 
         // if ( (y==-1) && (yc==63) ) info = 255;
@@ -376,7 +423,7 @@ void ZFileSectorLoader::LimitedUpdateFaceCulling(ZVoxelSector * Sector )
         */
         // Write face culling info to face culling table
 
-        SectorTable[0]->FaceCulling[OfTableX[xp]+OfTableY[yp]+OfTableZ[zp]] = info;
+        SectorTable[0]->Culler->setFaceCulling(SectorTable[0], OfTableX[xp]+OfTableY[yp]+OfTableZ[zp], info );
 
       }
     }
@@ -395,6 +442,6 @@ void ZFileSectorLoader::NoDrawFaceCulling(ZVoxelSector * Sector )
 
   for (i=0;i < (ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_Z); i++)
   {
-    Sector->FaceCulling[i] = DRAWFACE_NONE;
+    Sector->Culler->setFaceCulling(Sector, i, DRAWFACE_NONE );
   }
 }

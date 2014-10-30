@@ -35,7 +35,9 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
+#include "ZRender_Interface.h"
 #include "ZRender_Basic.h"
+#include "ZRender_Smooth.h"
 
 #ifndef Z_ZSTREAMS_FILE_H
 #  include "z/ZStream_File.h"
@@ -311,7 +313,7 @@ bool ZGame::Init_GuiManager(ZLog * InitLog)
 
   GuiManager.SetTextureManager(&TextureManager);
   GuiManager.SetEventManager(&EventManager);
-  GuiManager.SetScreenDimensions(0,0,ScreenResolution.x,ScreenResolution.y);
+  GuiManager.SetScreenDimensions(0,0,(float)ScreenResolution.x,(float)ScreenResolution.y);
   EventManager.AddConsumer_ToTail(&GuiManager);
 
   Initialized_GuiManager = true;
@@ -494,7 +496,9 @@ bool ZGame::Init_Renderer(ZLog * InitLog)
   InitLog->Log(1, ZLog::INFO, "Starting : Renderer Init");
   //ZRender_Basic Basic_Renderer;
 
-  Basic_Renderer = new ZRender_Basic;
+
+  Basic_Renderer = new ZRender_Basic( World );
+  //Basic_Renderer = new ZRender_Smooth( World );
 
   Basic_Renderer->SetGameEnv(this);
   Basic_Renderer->Init();
@@ -620,8 +624,9 @@ bool ZGame::End_WorldInfo()
 
 bool ZGame::Start_World()
 {
-  World = new ZVoxelWorld;
+  World = new ZVoxelWorld( this );
   if (!World) return(false);
+  Basic_Renderer->SetWorld( World );
 
   World->SetUniverseNum(UniverseNum);
   World->SetVoxelTypeManager(&VoxelTypeManager);
@@ -772,7 +777,7 @@ bool ZGame::End_PhysicEngine()
 
 bool ZGame::Start_SectorLoader()
 {
-  SectorLoader = new ZFileSectorLoader;
+  SectorLoader = new ZFileSectorLoader( this );
   if (!SectorLoader) return(false);
   SectorLoader->SetVoxelTypeManager(&VoxelTypeManager);
   SectorLoader->SetUniverseNum(UniverseNum);
@@ -851,6 +856,7 @@ bool ZGame::End_RendererSettings()
 {
   Basic_Renderer->SetWorld(0);
   Basic_Renderer->SetCamera(0);
+  Basic_Renderer->SetActor(0);
   Basic_Renderer->SetPointedVoxel(0);
   Initialized_RendererSettings = false;
   return(false);

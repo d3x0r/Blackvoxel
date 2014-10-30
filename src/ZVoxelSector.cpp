@@ -53,9 +53,7 @@
 ULong  ZVoxelSector::SectorsInMemory = 0;
 
 
-
-
-ZVoxelSector::ZVoxelSector() : ModifTracker(ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_Z)
+void ZVoxelSector::DefaultInit( void )
 {
   VoxelTypeManager = 0;
   Size_x = 16;
@@ -66,7 +64,7 @@ ZVoxelSector::ZVoxelSector() : ModifTracker(ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y 
   DataSize = Size_x * Size_y * Size_z;
   DisplayData = 0;
   Data        = new UShort[DataSize];
-  FaceCulling = new UByte [DataSize];
+  //FaceCulling = new ULong [DataSize];
   OtherInfos  = new ZMemSize[DataSize];
   TempInfos   = new UShort[DataSize];
 
@@ -81,6 +79,17 @@ ZVoxelSector::ZVoxelSector() : ModifTracker(ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y 
   SectorsInMemory++;
 }
 
+ZVoxelSector::ZVoxelSector() : ModifTracker(ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_Z)
+{
+	DefaultInit();
+}
+
+ZVoxelSector::ZVoxelSector(ZVoxelCuller *culler) : ModifTracker(ZVOXELBLOCSIZE_X * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_Z)
+{
+	DefaultInit();
+	culler->InitFaceCullData( this );
+}
+
 ZVoxelSector::ZVoxelSector( const ZVoxelSector &Sector)
 {
   ZMemSize DataSize;
@@ -88,12 +97,22 @@ ZVoxelSector::ZVoxelSector( const ZVoxelSector &Sector)
   DataSize = Sector.Size_x * Sector.Size_y * Sector.Size_z;
 
   Data        = new UShort[DataSize];
-  FaceCulling = new UByte [DataSize];
+#if 0
+  //FaceCulling = new ULong [DataSize];
+  {
+      ZMemSize i;
+
+      for ( i=0 ; i<DataSize ; i++ )
+      {
+        FaceCulling[i] = 0x3FFFFF;
+      }
+  }
+#endif
   OtherInfos  = new ZMemSize[DataSize];
   TempInfos   = new UShort[DataSize];
 
   memcpy(Data, Sector.Data, DataSize << 1 );
-  memcpy(FaceCulling, Sector.FaceCulling, DataSize);
+  //memcpy(FaceCulling, Sector.FaceCulling, DataSize);
   memcpy(OtherInfos, Sector.OtherInfos, DataSize * sizeof(ZMemSize));
   memcpy(TempInfos, Sector.TempInfos, DataSize << 2);
 
@@ -145,14 +164,14 @@ ZVoxelSector::ZVoxelSector(Long Size_x, Long Size_y, Long Size_z)
   if (DataSize>0)
   {
     Data        = new UShort[DataSize];
-    FaceCulling = new UByte [DataSize];
+    //FaceCulling = new ULong [DataSize];
     OtherInfos  = new ZMemSize [DataSize];
     TempInfos   = new UShort[DataSize];
   }
   else
   {
     Data        = 0;
-    FaceCulling = 0;
+    Culling = 0;
     OtherInfos  = 0;
     TempInfos   = 0;
   }
@@ -172,8 +191,8 @@ void ZVoxelSector::ChangeSize(Long Size_x, Long Size_y, Long Size_z)
   ULong i;
 
   if (Data)        {delete [] Data;        Data = 0;        }
-  if (FaceCulling) {delete [] FaceCulling; FaceCulling = 0; }
-  if (DisplayData) {delete DisplayData; DisplayData = 0;    }
+  if (Culling)     {delete [] Culling;     Culling = 0; }
+  if (DisplayData) {delete DisplayData;    DisplayData = 0;    }
   if (OtherInfos)  {delete [] OtherInfos;  OtherInfos  = 0; }
   if (TempInfos)   {delete [] TempInfos;   TempInfos   = 0; }
 
@@ -186,12 +205,13 @@ void ZVoxelSector::ChangeSize(Long Size_x, Long Size_y, Long Size_z)
   DisplayData = 0;
 
   Data        = new UShort[DataSize];
-  FaceCulling = new UByte [DataSize];
+  Culler->InitFaceCullData( this );
+  //FaceCulling = new ULong [DataSize];
   OtherInfos  = new ZMemSize [DataSize];
   TempInfos   = new UShort[DataSize];
 
   for(i=0;i<DataSize;i++) Data[i] = 0;
-  for(i=0;i<DataSize;i++) FaceCulling[i] = 0;
+  //for(i=0;i<DataSize;i++) FaceCulling[i] = 0;
   for(i=0;i<DataSize;i++) OtherInfos[i] = 0;
   for (i=0;i<DataSize;i++) TempInfos[i] = 273+20;
 }
@@ -270,8 +290,8 @@ ZVoxelSector::~ZVoxelSector()
   // Delete memory zones
 
   if (Data)        {delete [] Data;        Data = 0;        }
-  if (FaceCulling) {delete [] FaceCulling; FaceCulling = 0; }
-  if (DisplayData) {delete DisplayData; DisplayData = 0;    }
+  if (Culling)     {delete [] Culling;     Culling = 0;     }
+  if (DisplayData) {delete DisplayData;    DisplayData = 0; }
   if (OtherInfos)  {delete [] OtherInfos;  OtherInfos  = 0; }
   if (TempInfos)   {delete [] TempInfos;   TempInfos   = 0; }
 
@@ -428,7 +448,8 @@ Bool ZVoxelSector::Save(ULong UniverseNum, char const * OptFileName)
   Rs.Put(0xA600DBEDu);
   StartLen = Rs.GetActualBufferLen();
   Rs.Put((UShort)1); // Version
-  Compress_FaceCulling_RLE(FaceCulling, &Rs);
+  Culler->Compress_RLE( this, &Rs );
+//  Compress_FaceCulling_RLE(FaceCulling, &Rs);
   *Size = Rs.GetActualBufferLen() - StartLen;
   Rs.FlushBuffer();
 
@@ -617,7 +638,8 @@ Bool ZVoxelSector::Load(ULong UniverseNum, char const * OptFileName)
         Ok&= Rs.Get(Size_x);
         Ok&= Rs.Get(Size_y);
         Ok&= Rs.Get(Size_z);
-        if ( (Size_x != this->Size_x) || (Size_y != this->Size_y) || (Size_z != this->Size_z)) ChangeSize(Size_x,Size_y,Size_z);
+        if ( (Size_x != this->Size_x) || (Size_y != this->Size_y) || (Size_z != this->Size_z)) 
+			ChangeSize(Size_x,Size_y,Size_z);
         if (Section_Version >= 4)
         {
           Ok&= Rs.Get(Handle_x);
@@ -671,7 +693,7 @@ Bool ZVoxelSector::Load(ULong UniverseNum, char const * OptFileName)
       Ok = Rs.Get(Section_Len);
       Ok&= Rs.Get(Section_Version);
       if (!Ok) { printf("Sector Loading Error (%ld,%ld,%ld): Can't read VOXEL DATA section informations.\n", (UNum)Pos_x,(UNum)Pos_y,(UNum)Pos_z); Rs.Close(); InStream.Close(); return(false); }
-      if (!Decompress_FaceCulling_RLE(FaceCulling,&Rs)) { printf("Sector Loading Error (%ld,%ld,%ld): Can't read and decompress FACE CULLING section data.\n", (UNum)Pos_x,(UNum)Pos_y,(UNum)Pos_z); Rs.Close(); InStream.Close(); return(false); }
+      if (!Culler->Decompress_RLE(this,&Rs)) { printf("Sector Loading Error (%ld,%ld,%ld): Can't read and decompress FACE CULLING section data.\n", (UNum)Pos_x,(UNum)Pos_y,(UNum)Pos_z); Rs.Close(); InStream.Close(); return(false); }
     }
     else if (SectionName == "OTHERINF")
     {
@@ -844,7 +866,7 @@ void ZVoxelSector::DebugOutFCInfo( const char * FileName )
     {
       for ( x=0 ; x<Size_z ; x++ )
       {
-        Voxel = this->FaceCulling[ y + ( x*Size_y )+ (z * (Size_y*Size_x)) ];
+        Voxel = this->Culler->getFaceCulling( this, y + ( x*Size_y )+ (z * (Size_y*Size_x)) );
         Car = Voxel + 'A';
         fputc(Car, fp);
       }
@@ -960,12 +982,12 @@ void ZVoxelSector::Compress_OtherInfos_RLE(ZMemSize * Data, UShort * VoxelData, 
     Last = Actual;
   }
 }
-
+/*
 void ZVoxelSector::Compress_FaceCulling_RLE(UByte * Data, void  * Stream)
 {
   ZStream_SpecialRamStream * Rs = (ZStream_SpecialRamStream *)Stream;
   UByte MagicToken = 0xFF;
-  UByte Last, Actual;
+  ULong Last, Actual;
   ULong Point = 0;
   ULong SameCount = 0;
   ULong i;
@@ -1008,6 +1030,7 @@ void ZVoxelSector::Compress_FaceCulling_RLE(UByte * Data, void  * Stream)
     Last = Actual;
   }
 }
+*/
 
 void ZVoxelSector::Compress_Temperatures_RLE(UShort * Data, void  * Stream)
 {
@@ -1089,11 +1112,12 @@ bool ZVoxelSector::Decompress_Short_RLE(UShort * Data, void * Stream)
   return(true);
 }
 
+#if 0
 bool ZVoxelSector::Decompress_FaceCulling_RLE(UByte * Data, void * Stream)
 {
   ZStream_SpecialRamStream * Rs = (ZStream_SpecialRamStream *)Stream;
   UByte MagicToken = 0xFF;
-  UByte Actual;
+  ULong Actual;
   ULong Pointer;
   UShort nRepeat;
 
@@ -1120,7 +1144,7 @@ bool ZVoxelSector::Decompress_FaceCulling_RLE(UByte * Data, void * Stream)
 
   return(true);
 }
-
+#endif
 
 bool ZVoxelSector::Decompress_OtherInfos_RLE(ZMemSize * Data, void * Stream)
 {
@@ -1196,9 +1220,9 @@ void ZVoxelSector::Draw_safe_Sphere(double x, double y, double z, double Radius,
 
   if (Radius<0) Radius = -Radius;
 
-  sx = floor(x-Radius); ex = ceil(x+Radius);
-  sy = floor(y-Radius); ey = ceil(y+Radius);
-  sz = floor(z-Radius); ez = ceil(z+Radius);
+  sx = (Long)floor(x-Radius); ex = (Long)ceil(x+Radius);
+  sy = (Long)floor(y-Radius); ey = (Long)ceil(y+Radius);
+  sz = (Long)floor(z-Radius); ez = (Long)ceil(z+Radius);
 
   if (sx<0) sx=0; if (sx>=Size_x) sx=Size_x-1;
   if (sy<0) sy=0; if (sy>=Size_y) sy=Size_y-1;
@@ -1285,8 +1309,8 @@ void ZVoxelSector::Draw_safe_VoxelLine2( ZRect3L_2 * LineCoords, ZRect1d * Thick
   Dy = LineCoords->ey - LineCoords->sy;
   Dz = LineCoords->ez - LineCoords->sz;
 
-  TempMax = (fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
-  NumSteps = (TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
+  TempMax = (Long)(fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
+  NumSteps = (Long)(TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
   if (NumSteps<=0) Draw_safe_SetVoxel(LineCoords->sx, LineCoords->sy, LineCoords->sz, VoxelType);
 
   x = LineCoords->sx; y = LineCoords->sy; z = LineCoords->sz; Thick = Thickness->Start;
@@ -1294,7 +1318,7 @@ void ZVoxelSector::Draw_safe_VoxelLine2( ZRect3L_2 * LineCoords, ZRect1d * Thick
 
   for (i=0;i<=NumSteps;i++)
   {
-    if (Thick == 0.5) Draw_safe_SetVoxel( floor(x+0.5),floor(y+0.5),floor(z+0.5), VoxelType );
+    if (Thick == 0.5) Draw_safe_SetVoxel( (Long)floor(x+0.5),(Long)floor(y+0.5),(Long)floor(z+0.5), VoxelType );
     else              Draw_safe_Sphere( x+0.5,y+0.5,z+0.5, Thick, VoxelType );
 
     x+=Stepx;
@@ -1314,8 +1338,8 @@ void ZVoxelSector::Draw_safe_VoxelLine( ZRect3L * LineCoords, ZRect1d * Thicknes
 
   Long MaxThickness;
   Long ThickSize_x, ThickSize_y, ThickSize_z;
-  MaxThickness = Thickness->End;
-  if (Thickness->Start > MaxThickness) MaxThickness = Thickness->Start;
+  MaxThickness = (Long)Thickness->End;
+  if (Thickness->Start > MaxThickness) MaxThickness = (Long)Thickness->Start;
   MaxThickness += MaxThickness; // Convert Ray to diameter.
   ThickSize_x = Size_x + MaxThickness;
   ThickSize_y = Size_y + MaxThickness;
@@ -1336,8 +1360,8 @@ void ZVoxelSector::Draw_safe_VoxelLine( ZRect3L * LineCoords, ZRect1d * Thicknes
   Dy = LineCoords->End.y - LineCoords->Start.y;
   Dz = LineCoords->End.z - LineCoords->Start.z;
 
-  TempMax = (fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
-  NumSteps = (TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
+  TempMax = (Long)(fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
+  NumSteps = (Long)(TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
   if (NumSteps<=0) Draw_safe_SetVoxel(LineCoords->Start.x, LineCoords->Start.y, LineCoords->Start.z, VoxelType);
 
   x = LineCoords->Start.x; y = LineCoords->Start.y; z = LineCoords->Start.z; Thick = Thickness->Start;
@@ -1345,7 +1369,7 @@ void ZVoxelSector::Draw_safe_VoxelLine( ZRect3L * LineCoords, ZRect1d * Thicknes
 
   for (i=0;i<=NumSteps;i++)
   {
-    if (Thick == 0.5) Draw_safe_SetVoxel( floor(x+0.5),floor(y+0.5),floor(z+0.5), VoxelType );
+    if (Thick == 0.5) Draw_safe_SetVoxel( (Long)floor(x+0.5),(Long)floor(y+0.5),(Long)floor(z+0.5), VoxelType );
     else              Draw_safe_Sphere( x+0.5,y+0.5,z+0.5, Thick, VoxelType );
 
     x+=Stepx;
@@ -1369,8 +1393,8 @@ void ZVoxelSector::Draw_safe_VoxelLine_TickCtl( ZRect3L * LineCoords, double * T
   Dy = LineCoords->End.y - LineCoords->Start.y;
   Dz = LineCoords->End.z - LineCoords->Start.z;
 
-  TempMax = (fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
-  NumSteps = (TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
+  TempMax = (Long)(fabs((double)Dx) > fabs((double)Dy)) ? fabs((double)Dx) : fabs((double)Dy);
+  NumSteps = (Long)(TempMax > fabs((double)Dz)) ? TempMax : fabs((double)Dz);
   if (NumSteps<=0) Draw_safe_SetVoxel(LineCoords->Start.x, LineCoords->Start.y, LineCoords->Start.z, VoxelType);
 
   x = LineCoords->Start.x; y = LineCoords->Start.y; z = LineCoords->Start.z;
@@ -1468,12 +1492,12 @@ void ZVoxelSector::Draw_subtree_1(ZVoxelSector * Sector, ZVector3d * Point, ZPol
    NewDirection2.pitch -= angle;
    NewDirection2.yaw -=angle2;
 
-   Rect.sx = floor(Point->x+0.5);
-   Rect.sy = floor(Point->y+0.5);
-   Rect.sz = floor(Point->z+0.5);
-   Rect.ex = floor(NewPoint.x + 0.5);
-   Rect.ey = floor(NewPoint.y + 0.5);
-   Rect.ez = floor(NewPoint.z + 0.5);
+   Rect.sx = (Long)floor(Point->x+0.5);
+   Rect.sy = (Long)floor(Point->y+0.5);
+   Rect.sz = (Long)floor(Point->z+0.5);
+   Rect.ex = (Long)floor(NewPoint.x + 0.5);
+   Rect.ey = (Long)floor(NewPoint.y + 0.5);
+   Rect.ez = (Long)floor(NewPoint.z + 0.5);
    Thickness.Start = 1;
    Thickness.End = 1;
    Draw_safe_VoxelLine2(&Rect, &Thickness, 10);
@@ -1538,12 +1562,12 @@ void ZVoxelSector::Draw_subtree_2(ZVector3d * Point, ZPolar3d * Direction, ZLigh
    NewDirection2.pitch -= angle;
    NewDirection2.yaw -=angle2;
 
-   Rect.sx = floor(Point->x+0.5);
-   Rect.sy = floor(Point->y+0.5);
-   Rect.sz = floor(Point->z+0.5);
-   Rect.ex = floor(NewPoint.x + 0.5);
-   Rect.ey = floor(NewPoint.y + 0.5);
-   Rect.ez = floor(NewPoint.z + 0.5);
+   Rect.sx = (Long)floor(Point->x+0.5);
+   Rect.sy = (Long)floor(Point->y+0.5);
+   Rect.sz = (Long)floor(Point->z+0.5);
+   Rect.ex = (Long)floor(NewPoint.x + 0.5);
+   Rect.ey = (Long)floor(NewPoint.y + 0.5);
+   Rect.ez = (Long)floor(NewPoint.z + 0.5);
    Thickness.Start = 1;
    Thickness.End = 1;
    Draw_safe_VoxelLine2(&Rect, &Thickness, 68);
@@ -1617,12 +1641,12 @@ void ZVoxelSector::Draw_subtree_3(ZVector3d * Point, ZPolar3d * Direction, ZLigh
    NewDirection2.pitch -= angle;
    NewDirection2.yaw -=angle2;
 
-   Rect.sx = floor(Point->x+0.5);
-   Rect.sy = floor(Point->y+0.5);
-   Rect.sz = floor(Point->z+0.5);
-   Rect.ex = floor(NewPoint.x + 0.5);
-   Rect.ey = floor(NewPoint.y + 0.5);
-   Rect.ez = floor(NewPoint.z + 0.5);
+   Rect.sx = (Long)floor(Point->x+0.5);
+   Rect.sy = (Long)floor(Point->y+0.5);
+   Rect.sz = (Long)floor(Point->z+0.5);
+   Rect.ex = (Long)floor(NewPoint.x + 0.5);
+   Rect.ey = (Long)floor(NewPoint.y + 0.5);
+   Rect.ez = (Long)floor(NewPoint.z + 0.5);
    Thickness.Start = 5 - ((TotalLen - Direction->Len) / 24);
    Thickness.End = 5 - (TotalLen / 24);
    Draw_safe_VoxelLine2(&Rect, &Thickness, 68);

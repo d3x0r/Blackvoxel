@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef Z_ZRENDER_BASIC_H
-#define Z_ZRENDER_BASIC_H
+#ifndef Z_ZRENDER_SMOOTH_H
+#define Z_ZRENDER_SMOOTH_H
 
 //#ifndef Z_ZRENDER_BASIC_H
 //#  include "ZRender_Basic.h"
@@ -44,16 +44,17 @@
 #endif
 
 #include "ZActor_Player.h"
-#include "ZRender_Interface.h"
-extern GLuint TextureName[1024];
 
+#include "ZRender_Interface.h"
+
+extern GLuint TextureName[1024];
 
 class ZGame;
 
-class ZVoxelCuller_Basic: public ZVoxelCuller
+class ZVoxelCuller_Smooth: public ZVoxelCuller
 {
 public:
-	ZVoxelCuller_Basic( ZVoxelWorld *world ) : ZVoxelCuller( world )
+	ZVoxelCuller_Smooth( ZVoxelWorld *world ) : ZVoxelCuller( world )
 	{
 	}
 	 void InitFaceCullData( ZVoxelSector *sector );
@@ -66,19 +67,17 @@ public:
 	 void CullSingleVoxel( ZVoxelSector *sector, int x, int y, int z );
  	ULong getFaceCulling( ZVoxelSector *Sector, int offset );
 	void setFaceCulling( ZVoxelSector *Sector, int offset, ULong value );
-	bool Decompress_RLE( ZVoxelSector *Sector,  void * Stream);
-	void Compress_RLE( ZVoxelSector *Sector,  void  * Stream);
+	bool Decompress_RLE(ZVoxelSector *Sector,  void * Stream);
+	void Compress_RLE(ZVoxelSector *Sector,  void  * Stream);
 
 };
 
-
-class ZRender_Basic : public ZRender_Interface
+class ZRender_Smooth: public ZRender_Interface
 {
 public:
-    ZRender_Basic( ZVoxelWorld *world )
-    {
-		this->World = world;
-		voxelCuller = new ZVoxelCuller_Basic( world );
+    ZRender_Smooth( ZVoxelWorld *world )
+	{
+      voxelCuller = new ZVoxelCuller_Smooth( world );
       hRenderRadius = 1;  // 8
       vRenderRadius = 1;  // 3
       World = 0;
@@ -111,16 +110,19 @@ public:
       Frustum_CullingLimit = 0.0;
     }
 private:
+	void EmitFaces				( ZVoxelType ** VoxelTypeTable, UShort &VoxelType, UShort &prevVoxelType, ULong info
+							  , Long x, Long y, Long z
+							  , Long Sector_Display_x, Long Sector_Display_y, Long Sector_Display_z );
     void MakeSectorRenderingData(ZVoxelSector * Sector);
     void MakeSectorRenderingData_Sorted(ZVoxelSector * Sector);
 public:
+    void Render();
 	 ZVoxelCuller *GetCuller( void )
 	 {
        return voxelCuller;
 	 }
-
-    void Render();
 };
+
 
 
 #endif
