@@ -987,7 +987,8 @@ void ZVoxelReactor::ProcessSectors( double LastLoopTime )
                           IsActiveVoxels = true;
                           {
                             IsDebug = true;
-                            Sector->Flag_Render_Dirty = true;
+							  for( int r = 0; r < 6; r++ )
+								Sector->Flag_Render_Dirty[r] = true;
                             break;
                           }
                   case 94:  // Pompe à liquide T1
@@ -2128,7 +2129,7 @@ void ZVoxelReactor::ProcessSectors( double LastLoopTime )
                              World->Convert_Coords_VoxelToPlayer( &VoxelCoords, &VoxelLocation );
                              VoxelLocation.x += (GlobalSettings.VoxelBlockSize/2);VoxelLocation.z += (GlobalSettings.VoxelBlockSize/2);VoxelLocation.y += (GlobalSettings.VoxelBlockSize/2);
                              Distance = VoxelLocation.Distance(PlayerLocation);
-                             if (Distance < 4096.0)
+                             if (Distance < GlobalSettings.VoxelBlockSize * 6.0 /*4096.0*/)
                              {
                                IsLowActivityVoxels = false;
                                IsActiveVoxels = true;

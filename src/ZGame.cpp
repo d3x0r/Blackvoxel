@@ -428,8 +428,8 @@ bool ZGame::Init_VoxelTypeManager(ZLog * InitLog)
 {
   ZString Msg;
   InitLog->Log(1, ZLog::INFO, "Starting : VoxelTypeManager Init");
-  if (!Initialized_GraphicMode)    {ZString Err ="Can't init VoxelTypeManager : GraphicMode init not completed"; InitLog->Log(3, ZLog::FAIL, Err); return(false);}
-  if (!Initialized_Glew)           {ZString Err ="Can't init VoxelTypeManager : Glew init not completed"; InitLog->Log(4, ZLog::FAIL, Err); return(false);}
+  //if (!Initialized_GraphicMode)    {ZString Err ="Can't init VoxelTypeManager : GraphicMode init not completed"; InitLog->Log(3, ZLog::FAIL, Err); return(false);}
+  //if (!Initialized_Glew)           {ZString Err ="Can't init VoxelTypeManager : Glew init not completed"; InitLog->Log(4, ZLog::FAIL, Err); return(false);}
   VoxelTypeManager.SetGameEnv(this);
   if (!VoxelTypeManager.LoadVoxelTypes()) { ZString Err ="Can't init VoxelTypeManager."; InitLog->Log(5, ZLog::FAIL, Err); return(false); }
   Msg.Clear() << "Loaded " << VoxelTypeManager.GetTexturesCount() << " Voxel Textures."; InitLog->Log(6, ZLog::INFO, Msg);
@@ -491,7 +491,7 @@ bool ZGame::End_Game_Events()
   return(true);
 }
 
-bool ZGame::Init_Renderer(ZLog * InitLog)
+bool ZGame::Init_Renderer(ZLog * InitLog, PTRSZVAL psvInit )
 {
   InitLog->Log(1, ZLog::INFO, "Starting : Renderer Init");
   //ZRender_Basic Basic_Renderer;
@@ -505,8 +505,9 @@ bool ZGame::Init_Renderer(ZLog * InitLog)
   //Basic_Renderer.SetCamera(&Player);
   Basic_Renderer->SetVoxelTypeManager( &VoxelTypeManager);
   Basic_Renderer->SetTextureManager(&TextureManager);
-  Basic_Renderer->LoadVoxelTexturesToGPU();
-  Basic_Renderer->LoadTexturesToGPU();
+  Basic_Renderer->current_gl_camera = psvInit - 1;
+  Basic_Renderer->LoadVoxelTexturesToGPU(psvInit-1);
+  Basic_Renderer->LoadTexturesToGPU(psvInit-1);
 
   Initialized_Renderer = true;
   InitLog->Log(2, ZLog::INFO, "Ended Ok : Renderer Init");

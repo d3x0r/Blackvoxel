@@ -53,21 +53,27 @@ extern GLuint TextureName[1024];
 class ZRender_Interface_displaydata : public ZObject
 {
   public:
-    GLint DisplayList_Regular;
-    GLint DisplayList_Transparent;
+    GLint DisplayList_Regular[6];
+    GLint DisplayList_Transparent[6];
 
     ZRender_Interface_displaydata()
     {
-      DisplayList_Regular = 0;
-      DisplayList_Transparent = 0;
+		for( int i = 0; i < 6; i++ )
+		{
+      DisplayList_Regular[i] = 0;
+      DisplayList_Transparent[i] = 0;
+		}
 
     }
     ~ZRender_Interface_displaydata()
     {
-      if (DisplayList_Regular)     glDeleteLists(DisplayList_Regular, 1);
-      DisplayList_Regular = 0;
-      if (DisplayList_Transparent) glDeleteLists(DisplayList_Transparent, 1);
-      DisplayList_Transparent = 0;
+		for( int i = 0; i < 6; i++ )
+		{
+			  if (DisplayList_Regular[i])     glDeleteLists(DisplayList_Regular[i], 1);
+			  DisplayList_Regular[i] = 0;
+			  if (DisplayList_Transparent[i]) glDeleteLists(DisplayList_Transparent[i], 1);
+			  DisplayList_Transparent[i] = 0;
+		}
     }
 
 };
@@ -80,8 +86,10 @@ class ZRender_Interface
     ZVoxelWorld * World;
     ZVoxelTypeManager * VoxelTypeManager;
     ZTextureManager  * TextureManager;
-
+public:
+	PTRSZVAL current_gl_camera;
     ZCamera     * Camera;
+protected:
 	ZActor      * Actor;  // where the camera came from really...
     ZRayCast_out * PointedVoxel;
     ZRadius_Zoning RadiusZones;
@@ -178,8 +186,8 @@ class ZRender_Interface
 
     void Init();
     void Cleanup() { }
-    Bool LoadVoxelTexturesToGPU();
-    Bool LoadTexturesToGPU();
+    Bool LoadVoxelTexturesToGPU(PTRSZVAL psvInit);
+    Bool LoadTexturesToGPU(PTRSZVAL psvInit);
 
 
     void Render_DebugLine       ( ZVector3d & Start, ZVector3d & End);
@@ -189,7 +197,7 @@ class ZRender_Interface
 							  , Long Sector_Display_x, Long Sector_Display_y, Long Sector_Display_z );
     void MakeSectorRenderingData(ZVoxelSector * Sector);
     void MakeSectorRenderingData_Sorted(ZVoxelSector * Sector);
-    virtual void Render() = 0;
+    virtual void Render( bool use_external_matrix ) = 0;
 	virtual ZVoxelCuller *GetCuller( ) = 0;
 
 
@@ -219,6 +227,7 @@ class ZRender_Interface
       ZVector3d Cv;
 	  ZVector3d Cv2 = *Point - TransformParam.origin();
       bool Visible;
+	  return true;
 	  TransformParam.ApplyInverseRotation( Cv, Cv2 );
 
       // Translation and Rotation
@@ -232,7 +241,7 @@ class ZRender_Interface
       // Visibility test
 
       Visible = (
-                     (Cv.z < 0.0)
+                     (Cv.z > 0.0)
                   && (Cv.x < Frustum_CullingLimit && Cv.x >-Frustum_CullingLimit) // Number replaced by Frustum_CullingLimit was 50.0
                   && (Cv.y < Frustum_CullingLimit && Cv.y >-Frustum_CullingLimit) //
                 );

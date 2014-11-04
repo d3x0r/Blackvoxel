@@ -73,7 +73,7 @@ ZVoxelWorld::ZVoxelWorld( ZGame *GameEnv )
   GameEnv->Basic_Renderer->GetCuller()->InitFaceCullData( WorkingEmptySector );
   WorkingEmptySector->Fill(0);
   WorkingScratchSector = new ZVoxelSector;
-  GameEnv->Basic_Renderer->GetCuller()->InitFaceCullData( WorkingEmptySector );
+  GameEnv->Basic_Renderer->GetCuller()->InitFaceCullData( WorkingScratchSector );
 
   SectorLoader = 0;
   SectorList = 0;
@@ -271,7 +271,9 @@ void ZVoxelWorld::ProcessNewLoadedSectors()
 
       Sector->Flag_Void_Regular = false;
       Sector->Flag_Void_Transparent = false;
-      Sector->Flag_Render_Dirty = true;
+
+        for( int r = 0; r < 6; r++ )
+			Sector->Flag_Render_Dirty[r] = true;
       //printf("AddSector: %ld,%ld,%ld\n",Sector->Pos_x, Sector->Pos_y, Sector->Pos_z);
 
       // Partial face culing for adjacent sectors
@@ -288,55 +290,6 @@ void ZVoxelWorld::ProcessNewLoadedSectors()
       AdjSector = FindSector(Sector->Pos_x, Sector->Pos_y+1, Sector->Pos_z); 
 	  if (AdjSector) { AdjSector->PartialCulling |= DRAWFACE_ABOVE;}
 
-	  /*
-	  // ----   left 
-      AdjSector = FindSector(Sector->Pos_x-1, Sector->Pos_y, Sector->Pos_z-1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_LEFT_HAS_AHEAD;
-
-      AdjSector = FindSector(Sector->Pos_x-1, Sector->Pos_y, Sector->Pos_z+1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_LEFT_HAS_BEHIND;
-
-      AdjSector = FindSector(Sector->Pos_x-1, Sector->Pos_y+1, Sector->Pos_z); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_LEFT_HAS_ABOVE;
-
-      AdjSector = FindSector(Sector->Pos_x-1, Sector->Pos_y-1, Sector->Pos_z); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_LEFT_HAS_BELOW;
-
-	  // ----   left 
-      AdjSector = FindSector(Sector->Pos_x+1, Sector->Pos_y, Sector->Pos_z-1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_RIGHT_HAS_AHEAD;
-
-      AdjSector = FindSector(Sector->Pos_x+1, Sector->Pos_y, Sector->Pos_z+1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_RIGHT_HAS_BEHIND;
-
-      AdjSector = FindSector(Sector->Pos_x+1, Sector->Pos_y+1, Sector->Pos_z); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_RIGHT_HAS_ABOVE;
-      AdjSector = FindSector(Sector->Pos_x+1, Sector->Pos_y-1, Sector->Pos_z); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_RIGHT_HAS_BELOW;
-
-  	  // ----   below
-	  AdjSector = FindSector(Sector->Pos_x, Sector->Pos_y-1, Sector->Pos_z-1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_BELOW_HAS_AHEAD;
-      AdjSector = FindSector(Sector->Pos_x, Sector->Pos_y-1, Sector->Pos_z+1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_BELOW_HAS_BEHIND;
-  	  // ----   above
-      AdjSector = FindSector(Sector->Pos_x, Sector->Pos_y+1, Sector->Pos_z-1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_ABOVE_HAS_AHEAD;
-      AdjSector = FindSector(Sector->Pos_x, Sector->Pos_y+1, Sector->Pos_z+1); 
-	  if (AdjSector) 
-		  Sector->PartialCulling |= DRAWFACE_ABOVE_HAS_BEHIND;
-	  */
     }
     else { delete Sector; printf("Loading already used sector***\n"); }
   }
@@ -2331,7 +2284,7 @@ bool ZVoxelWorld::SetVoxel_WithCullingUpdate(Long x, Long y, Long z, UShort Voxe
 {
   UShort * Voxel_Address[19];
   ULong  Offset[19];
-  ULong * FaceCulling_Address[19];
+  UByte * FaceCulling_Address[19];
   UShort VoxelState[19];
   UShort Voxel;
   ZVoxelSector * Sector[19];
@@ -2392,7 +2345,7 @@ bool ZVoxelWorld::SetVoxel_WithCullingUpdate(Long x, Long y, Long z, UShort Voxe
   for( int i = 0; i < 19; i++ )
   {
 	Voxel_Address[i]     = Sector[i]->Data + Offset[i];
-    //FaceCulling_Address[i]     = Sector[i]->FaceCulling + Offset[i];
+	FaceCulling_Address[i]     = (UByte*)Sector[i]->Culling + Offset[i];
     Voxel = *Voxel_Address[i];    VoxelType = VoxelTypeTable[Voxel];
       VoxelState[i] = ( (Voxel==0) ? 1 : 0) 
 		     | ( VoxelType->Draw_FullVoxelOpacity ? 2 : 0 ) 
@@ -2517,7 +2470,8 @@ bool ZVoxelWorld::SetVoxel_WithCullingUpdate(Long x, Long y, Long z, UShort Voxe
   // Updating sector status rendering flag status
   for( int i = 0; i < 19; i++ )
   {
-	Sector[i]->Flag_Render_Dirty = true;
+	  for( int r = 0; r < 6; r++ )
+			Sector[i]->Flag_Render_Dirty[r] = true;
   }
   /*
   Sector[VOXEL_INCENTER]->Flag_Render_Dirty = true;
@@ -2562,7 +2516,8 @@ void ZVoxelWorld::Purge(UShort VoxelType)
   for (Sector = SectorList; (Sector) ; Sector = Sector->GlobalList_Next )
   {
     Sector->Purge(VoxelType);
-    Sector->Flag_Render_Dirty = true;
+	  for( int r = 0; r < 6; r++ )
+		Sector->Flag_Render_Dirty[r] = true;
   }
 }
 

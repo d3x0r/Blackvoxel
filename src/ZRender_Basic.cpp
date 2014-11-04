@@ -709,7 +709,8 @@ bool SetVoxel_WithCullingUpdate(ZVoxelWorld *world, ZVoxelSector *sector, Long x
   // Updating sector status rendering flag status
   for( int i = 0; i < 19; i++ )
   {
-	Sector[i]->Flag_Render_Dirty = true;
+	  for( int r = 0; r < 6; r++ )
+		Sector[i]->Flag_Render_Dirty[r] = true;
   }
   /*
   Sector[VOXEL_INCENTER]->Flag_Render_Dirty = true;
@@ -747,7 +748,7 @@ bool SetVoxel_WithCullingUpdate(ZVoxelWorld *world, ZVoxelSector *sector, Long x
 
 
 
-void ZRender_Basic::Render()
+void ZRender_Basic::Render( bool use_external_matrix )
 {
 
   ZHighPerfTimer Timer;
@@ -772,7 +773,8 @@ void ZRender_Basic::Render()
 
    ZGameStat * Stat = GameEnv->GameStat;
 
-
+   if( !Stat )
+	   return;
 
   // Precomputing values for faster math
 
@@ -826,10 +828,12 @@ void ZRender_Basic::Render()
 
    Frustum_CullingLimit = ((Frustum_H > Frustum_V) ? Frustum_H : Frustum_V) * Optimisation_FCullingFactor;
 
-
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-   glFrustum(Frustum_H, -Frustum_H, -Frustum_V, Frustum_V, FocusDistance, 1000000.0); // Official Way
+   if( !use_external_matrix )
+   {
+	   glMatrixMode(GL_PROJECTION);
+	   glLoadIdentity();
+	   glFrustum(Frustum_H, -Frustum_H, -Frustum_V, Frustum_V, FocusDistance, 1000000.0); // Official Way
+   }
 // glFrustum(50.0, -50.0, -31.0, 31.0, 50.0, 1000000.0); // Official Way
 
     // glFrustum(165.0, -165.0, -31.0, 31.0, 50.0, 1000000.0); // Eyefinity setting.
@@ -837,6 +841,8 @@ void ZRender_Basic::Render()
 
   // Objects of the world are translated and rotated to position camera at the right place.
 
+   if( !use_external_matrix )
+   {
     glMatrixMode(GL_MODELVIEW);
     //glLoadIdentity();
 	glLoadMatrixd( Camera->orientation.glMatrix() );
@@ -847,8 +853,9 @@ void ZRender_Basic::Render()
     //glTranslatef(-(float)Camera->x,-(float)Camera->y,-(float)Camera->z);
 
   // Clearing FrameBuffer and Z-Buffer
-
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+   }
+
     glAlphaFunc(GL_GREATER, 0.2);
     glEnable(GL_ALPHA_TEST);
 
@@ -925,7 +932,7 @@ void ZRender_Basic::Render()
           {
             Sector->Flag_IsVisibleAtLastRendering = SectorVisible || Priority>=4;
             // Display lists preparation
-            if (Sector->Flag_Render_Dirty && GameEnv->Enable_NewSectorRendering)
+			if (Sector->Flag_Render_Dirty[current_gl_camera] && GameEnv->Enable_NewSectorRendering)
             {
               if (Sector->Flag_IsDebug)
               {
@@ -972,15 +979,19 @@ void ZRender_Basic::Render()
             if (   Sector->Flag_IsVisibleAtLastRendering
                 && (!Sector->Flag_Void_Regular)
                 && (Sector->DisplayData != 0)
-                && (((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Regular != 0)
+                && (((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Regular[current_gl_camera] != 0)
                 )
               {
 
                 #if COMPILEOPTION_FINETIMINGTRACKING == 1
                 Timer_SectorRefresh.Start();
                 #endif
+				{ int x; if( x = glGetError() ) 
+					printf( "glerror: %d\n", x );}
 
-                glCallList( ((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Regular );
+                glCallList( ((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Regular[current_gl_camera] );
+				{ int x; if( x = glGetError() ) 
+					printf( "glerror: %d\n", x );}
                 Stat->SectorRender_Count++;RenderedSectors++;
 
                 #if COMPILEOPTION_FINETIMINGTRACKING == 1
@@ -1017,14 +1028,16 @@ void ZRender_Basic::Render()
             if (  Sector->Flag_IsVisibleAtLastRendering
                && (!Sector->Flag_Void_Transparent)
                && (Sector->DisplayData != 0)
-               && (((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Transparent != 0)
+               && (((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Transparent[current_gl_camera] != 0)
                )
             {
               #if COMPILEOPTION_FINETIMINGTRACKING == 1
                 Timer_SectorRefresh.Start();
               #endif
 
-              glCallList( ((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Transparent );
+              glCallList( ((ZRender_Interface_displaydata *)Sector->DisplayData)->DisplayList_Transparent[current_gl_camera] );
+				{ int x; if( x = glGetError() ) 
+					printf( "glerror: %d\n", x );}
               Stat->SectorRender_Count++;
 
               #if COMPILEOPTION_FINETIMINGTRACKING == 1
@@ -1057,7 +1070,7 @@ void ZRender_Basic::Render()
     // Debug ****************************************************
 
     ZVector3d Norm, Tmp;
-    Norm.x = 0; Norm.y = 0; Norm.z = -1;
+    Norm.x = 0; Norm.y = 0; Norm.z = 1;
 	Camera->orientation.ApplyRotation( Tmp, Norm );
     // X axis rotation
     //Tmp.y = Norm.y * cos(-Camera->Pitch/57.295779513) - Norm.z * sin(-Camera->Pitch/57.295779513);
@@ -1073,7 +1086,7 @@ void ZRender_Basic::Render()
     In.MaxCubeIterations = 150;
     In.MaxDetectionDistance = 1536;//1000000.0;
 
-    ZVector3d CamPoint(Camera->x(),Camera->y(),Camera->z());
+    //ZVector3d CamPoint(Camera->x(),Camera->y(),Camera->z());
     ZVector3d Zp;
     Zp = PointedVoxel->CollisionPoint; Zp.y = PointedVoxel->CollisionPoint.y + 100.0;
 
@@ -1088,7 +1101,7 @@ void ZRender_Basic::Render()
 	  else
 	  {
 		  ZVector3d a = Camera->orientation.origin() +
-			  Camera->orientation.z_axis() * ( GlobalSettings.VoxelBlockSize * -(Actor->VoxelSelectDistance) );
+			  Camera->orientation.z_axis() * ( GlobalSettings.VoxelBlockSize * (Actor->VoxelSelectDistance) );
 		  //In.MaxCubeIterations = 6;
 
 		  ZVoxelRef *v = World->GetVoxelRefPlayerCoord( a.x, a.y, a.z );
@@ -1224,8 +1237,8 @@ void ZRender_Basic::MakeSectorRenderingData(ZVoxelSector * Sector)
 
   if (Sector->DisplayData == 0) { Sector->DisplayData = new ZRender_Interface_displaydata; }
   DisplayData = (ZRender_Interface_displaydata *)Sector->DisplayData;
-  if ( DisplayData->DisplayList_Regular == 0 )    DisplayData->DisplayList_Regular = glGenLists(1);
-  if ( DisplayData->DisplayList_Transparent == 0) DisplayData->DisplayList_Transparent = glGenLists(1);
+  if ( DisplayData->DisplayList_Regular[current_gl_camera] == 0 )    DisplayData->DisplayList_Regular[current_gl_camera] = glGenLists(1);
+  if ( DisplayData->DisplayList_Transparent[current_gl_camera] == 0) DisplayData->DisplayList_Transparent[current_gl_camera] = glGenLists(1);
 
   if (Sector->Flag_Render_Dirty || 1 )
   {
@@ -1240,8 +1253,8 @@ void ZRender_Basic::MakeSectorRenderingData(ZVoxelSector * Sector)
     {
       switch(Pass)
       {
-        case 0: glNewList(DisplayData->DisplayList_Regular, GL_COMPILE); break;
-        case 1: glNewList(DisplayData->DisplayList_Transparent, GL_COMPILE); break;
+        case 0: glNewList(DisplayData->DisplayList_Regular[current_gl_camera], GL_COMPILE); break;
+        case 1: glNewList(DisplayData->DisplayList_Transparent[current_gl_camera], GL_COMPILE); break;
       }
       prevcube = 0;
       for ( z=0 ; z < Sector->Size_z ; z++ )
@@ -1269,7 +1282,10 @@ void ZRender_Basic::MakeSectorRenderingData(ZVoxelSector * Sector)
             if (Draw)
             {
               // glTexEnvf(0x8500 /* TEXTURE_FILTER_CONTROL_EXT */, 0x8501 /* TEXTURE_LOD_BIAS_EXT */,VoxelTypeManager->VoxelTable[cube]->TextureLodBias);
-              if (cube != prevcube) glBindTexture(GL_TEXTURE_2D, VoxelTypeManager->VoxelTable[cube]->OpenGl_TextureRef);
+              if (cube != prevcube) glBindTexture(GL_TEXTURE_2D, VoxelTypeManager->VoxelTable[cube]->OpenGl_TextureRef[current_gl_camera]);
+			  				{ int x; if( x = glGetError() ) 
+					printf( "glerror: %d\n", x );}
+
               prevcube = cube;
               cubx = (float)(x*GlobalSettings.VoxelBlockSize + Sector_Display_x);
               cuby = (float)(y*GlobalSettings.VoxelBlockSize + Sector_Display_y);
@@ -1387,7 +1403,7 @@ void ZRender_Basic::MakeSectorRenderingData(ZVoxelSector * Sector)
 
       if (Sector->Flag_Void_Transparent) break;
     }
-    Sector->Flag_Render_Dirty = false;
+    Sector->Flag_Render_Dirty[current_gl_camera] = false;
   }
 
 }
@@ -1434,12 +1450,13 @@ void ZRender_Basic::MakeSectorRenderingData_Sorted(ZVoxelSector * Sector)
 
   Sector->Flag_Void_Regular = true;
   Sector->Flag_Void_Transparent = true;
-  Sector->Flag_Render_Dirty = false;
+  Sector->Flag_Render_Dirty[current_gl_camera] = false;
 
   // Render sorter action
 
   RenderSorter.ProcessSector(Sector);
-  if (!RenderSorter.GetBucketCount()) return;
+  if (!RenderSorter.GetBucketCount()) 
+	  return;
 
   // Check what blocktypes
 
@@ -1456,8 +1473,8 @@ void ZRender_Basic::MakeSectorRenderingData_Sorted(ZVoxelSector * Sector)
 
   if (Sector->DisplayData == 0) { Sector->DisplayData = new ZRender_Interface_displaydata; }
   DisplayData = (ZRender_Interface_displaydata *)Sector->DisplayData;
-  if ( (!Sector->Flag_Void_Regular)     && (DisplayData->DisplayList_Regular == 0) )    DisplayData->DisplayList_Regular = glGenLists(1);
-  if ( (!Sector->Flag_Void_Transparent) && (DisplayData->DisplayList_Transparent == 0) ) DisplayData->DisplayList_Transparent = glGenLists(1);
+  if ( (!Sector->Flag_Void_Regular)     && (DisplayData->DisplayList_Regular[current_gl_camera] == 0) )    DisplayData->DisplayList_Regular[current_gl_camera] = glGenLists(1);
+  if ( (!Sector->Flag_Void_Transparent) && (DisplayData->DisplayList_Transparent[current_gl_camera] == 0) ) DisplayData->DisplayList_Transparent[current_gl_camera] = glGenLists(1);
 
   // Computing Sector Display coordinates;
 
@@ -1467,8 +1484,8 @@ void ZRender_Basic::MakeSectorRenderingData_Sorted(ZVoxelSector * Sector)
 
   for (Pass=0; Pass<2; Pass++)
   {
-    if (!Pass) { if (Sector->Flag_Void_Regular)     continue; glNewList(DisplayData->DisplayList_Regular, GL_COMPILE); }
-    else       { if (Sector->Flag_Void_Transparent) continue; glNewList(DisplayData->DisplayList_Transparent, GL_COMPILE); }
+    if (!Pass) { if (Sector->Flag_Void_Regular)     continue; glNewList(DisplayData->DisplayList_Regular[current_gl_camera], GL_COMPILE); }
+    else       { if (Sector->Flag_Void_Transparent) continue; glNewList(DisplayData->DisplayList_Transparent[current_gl_camera], GL_COMPILE); }
 
     prevVoxelType = 0;
 
@@ -1506,7 +1523,9 @@ void ZRender_Basic::MakeSectorRenderingData_Sorted(ZVoxelSector * Sector)
         // Offset = y + ( x << ZVOXELBLOCSHIFT_Y )+ (z << (ZVOXELBLOCSHIFT_Y + ZVOXELBLOCSHIFT_X));
 
         // glTexEnvf(0x8500 /* TEXTURE_FILTER_CONTROL_EXT */, 0x8501 /* TEXTURE_LOD_BIAS_EXT */,VoxelTypeManager->VoxelTable[VoxelType]->TextureLodBias);
-        if (VoxelType != prevVoxelType) glBindTexture(GL_TEXTURE_2D, VoxelTypeManager->VoxelTable[VoxelType]->OpenGl_TextureRef);
+		if (VoxelType != prevVoxelType) glBindTexture(GL_TEXTURE_2D, VoxelTypeManager->VoxelTable[VoxelType]->OpenGl_TextureRef[current_gl_camera]);
+			  				{ int x; if( x = glGetError() ) 
+					printf( "glerror: %d\n", x );}
         prevVoxelType = VoxelType;
         cubx = (float)(x*GlobalSettings.VoxelBlockSize + Sector_Display_x);
         cuby = (float)(y*GlobalSettings.VoxelBlockSize + Sector_Display_y);

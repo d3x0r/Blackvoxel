@@ -178,6 +178,19 @@
 
 class ZFileSectorLoader;
 
+enum GamePages {
+
+PAGE_MAIN_MENU 
+, PAGE_SETTINGS 
+, PAGE_SELECT_UNIVERSE 
+, PAGE_LOADING_SCREEN 
+, PAGE_SETTINGS_DISPLAY 
+, PAGE_SETTINGS_SOUND
+, PAGE_SETTINGS_MOUSE
+, PAGE_SETTINGS_KEYMAP
+, PAGE_GAME_WORLD_1
+};
+
 class ZGame
 {
   public:
@@ -227,8 +240,14 @@ class ZGame
              GameWindow_Inventory = 0;
              GameWindow_DisplayInfos = 0;
              GameProgressBar = 0;
+
+			 page_up = PAGE_MAIN_MENU;
+			 prior_page_up = -1;
+			 //Menu_Up = false;
+			 //OptionScreen_Up = false;
              Game_Run = false;
              screen = 0;
+			 display_index = 0;
              GameWindow_Advertising = 0;
              Sound = 0;
              GameWindow_UserTextureTransformer = 0;
@@ -241,6 +260,8 @@ class ZGame
              Enable_LoadNewSector = true;
              Enable_NewSectorRendering = true;
              GameEventSequencer = 0;
+			 frames = 0;
+			 frame_start = 0;
              Time_FrameTime = 20;
              Time_GameElapsedTime = 0;
              VFov = 63.597825649;
@@ -277,7 +298,9 @@ class ZGame
 
 
   // Game Loop continue flag
-
+  bool Mouse_relative;
+  int page_up;
+  int prior_page_up;
   bool Game_Run;
 
   // Game objects
@@ -347,6 +370,7 @@ class ZGame
 #else
   SDL_Window * screen;
 #endif
+  int display_index;
   ZVector2L ScreenResolution;   // Taille réelle de la zone d'affichage.
   ZVector2L HardwareResolution; // Resolution qui est demandée à SDL.
   ZVector2L DesktopResolution;  // Résolution du bureau.
@@ -355,6 +379,8 @@ class ZGame
   // timers
 
   double Time_GameLoop;
+  ULong frame_start;
+  ULong frames;
   UELong Time_FrameTime; // Same as Time_GameLoop but in integer format;
   UELong Time_GameElapsedTime;
 
@@ -376,7 +402,7 @@ class ZGame
   bool Init_EventManager(ZLog * InitLog);
   bool Init_GuiManager(ZLog * InitLog);
   bool Init_TileSetsAndFonts(ZLog * InitLog);
-  bool Init_Renderer(ZLog * InitLog);
+  bool Init_Renderer(ZLog * InitLog, PTRSZVAL psvInit );
   bool Init_Sound(ZLog * InitLog);
 
   bool Cleanup_UserDataStorage(ZLog * InitLog);
@@ -430,15 +456,15 @@ class ZGame
     result = Init_UserDataStorage(InitLog.Sec(1000));    if (!result) return(false);
     result = Init_Settings(InitLog.Sec(1010));           if (!result) return(false);
     result = Init_SDL(InitLog.Sec(1020));                if (!result) return(false);
-    result = Init_GraphicMode(InitLog.Sec(1030));        if (!result) return(false);
-    result = Init_Glew(InitLog.Sec(1040));               if (!result) return(false);
+    //result = Init_GraphicMode(InitLog.Sec(1030));        if (!result) return(false);
+    //result = Init_Glew(InitLog.Sec(1040));               if (!result) return(false);
     result = Init_VoxelTypeManager(InitLog.Sec(1050));   if (!result) return(false);
     result = Init_TextureManager(InitLog.Sec(1060));     if (!result) return(false);
-    result = Init_OpenGLGameSettings(InitLog.Sec(1070)); if (!result) return(false);
+    //result = Init_OpenGLGameSettings(InitLog.Sec(1070)); if (!result) return(false);
     result = Init_EventManager(InitLog.Sec(1080));       if (!result) return(false);
-    result = Init_GuiManager(InitLog.Sec(1090));         if (!result) return(false);
-    result = Init_TileSetsAndFonts(InitLog.Sec(1100));   if (!result) return(false);
-    result = Init_Renderer(InitLog.Sec(1110));           if (!result) return(false);
+    //result = Init_GuiManager(InitLog.Sec(1090));         if (!result) return(false);
+    //result = Init_TileSetsAndFonts(InitLog.Sec(1100));   if (!result) return(false);
+    //result = Init_Renderer(InitLog.Sec(1110));           if (!result) return(false);
     result = Init_Sound(InitLog.Sec(1120));              if (!result) return(false);
     return(true);
   }
