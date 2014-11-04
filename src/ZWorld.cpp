@@ -267,7 +267,7 @@ void ZVoxelWorld::ProcessNewLoadedSectors()
     if   (!FindSector(Sector->Pos_x, Sector->Pos_y, Sector->Pos_z))
     {
       AddSector(Sector);
-	  Sector->Culler->CullSector( Sector, true);
+	  Sector->Culler->CullSector( Sector, true, 0 );
 
       Sector->Flag_Void_Regular = false;
       Sector->Flag_Void_Transparent = false;
@@ -402,7 +402,7 @@ void ZVoxelWorld::WorldUpdateFaceCulling()
 
   while (Sector)
   {
-	  Sector->Culler->CullSector( Sector, true);
+	  Sector->Culler->CullSector( Sector, true, 0);
     //SectorUpdateFaceCulling(Sector->Pos_x, Sector->Pos_y, Sector->Pos_z );
     Sector = Sector->GlobalList_Next;
   }
@@ -2569,7 +2569,7 @@ bool ZVoxelWorld::Old_Load()
   while(Sector)
   {
     if (!Sector->Old_Load(UniverseNum)) Result = false;
-	  Sector->Culler->CullSector( Sector, true);
+	  Sector->Culler->CullSector( Sector, true, 0);
     //SectorUpdateFaceCulling(Sector->Pos_x,Sector->Pos_y,Sector->Pos_z,false);
     Sector->Flag_NeedFullCulling = true;
     Sector=Sector->GlobalList_Next;
@@ -2578,7 +2578,7 @@ bool ZVoxelWorld::Old_Load()
   Sector = SectorList;
   while(Sector)
   {
-	  Sector->Culler->CullSector( Sector, true);
+	  Sector->Culler->CullSector( Sector, true, 0);
     //SectorUpdateFaceCulling(Sector->Pos_x,Sector->Pos_y,Sector->Pos_z,false);
     Sector=Sector->GlobalList_Next;
   }

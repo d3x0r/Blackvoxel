@@ -49,7 +49,7 @@ void ZVoxelCuller_Smooth::InitFaceCullData( ZVoxelSector *Sector )
 	Sector->Culling = new ULong[Sector->DataSize];
 	memset( Sector->Culling, 0, sizeof( ULong ) * Sector->DataSize );
 }
-void ZVoxelCuller_Smooth::CullSector( ZVoxelSector *Sector, bool internal )
+void ZVoxelCuller_Smooth::CullSector( ZVoxelSector *Sector, bool internal, int interesting_faces )
 {
 }
 void ZVoxelCuller_Smooth::CullSingleVoxel( ZVoxelSector *Sector, int x, int y, int z )

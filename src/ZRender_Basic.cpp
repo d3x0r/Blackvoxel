@@ -417,11 +417,18 @@ ULong SectorUpdateFaceCulling_Partial(ZVoxelWorld *world, ZVoxelSector *Sector, 
       }
       CuledFaces |= DRAWFACE_BEHIND;
     }
+    Sector->PartialCulling ^= CuledFaces & (DRAWFACE_ABOVE | DRAWFACE_BELOW | DRAWFACE_LEFT | DRAWFACE_RIGHT | DRAWFACE_AHEAD | DRAWFACE_BEHIND);
+    Sector->PartialCulling &= (DRAWFACE_ABOVE | DRAWFACE_BELOW | DRAWFACE_LEFT | DRAWFACE_RIGHT | DRAWFACE_AHEAD | DRAWFACE_BEHIND);
+    if (CuledFaces) 
+	{
+		for( int r = 0; r < 6; r++ )
+			Sector->Flag_Render_Dirty[r] = true;
+	}
 
   return(CuledFaces);
 }
 
-void ZVoxelCuller_Basic::CullSector( ZVoxelSector *Sector, bool internal )
+void ZVoxelCuller_Basic::CullSector( ZVoxelSector *Sector, bool internal, int interesting_faces )
 {
 	if( internal )
 	{
@@ -429,6 +436,8 @@ void ZVoxelCuller_Basic::CullSector( ZVoxelSector *Sector, bool internal )
 	}
 	else
 	{
+		SectorUpdateFaceCulling_Partial( world, Sector, interesting_faces, false );
+
 	}
 }
 

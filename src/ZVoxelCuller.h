@@ -32,7 +32,7 @@ public:
 	virtual void InitFaceCullData( ZVoxelSector *sector ) = 0;
 
    // if not internal, then is meant to cull the outside edges of the sector
-	virtual void CullSector( ZVoxelSector *sector, bool internal ) = 0;
+	virtual void CullSector( ZVoxelSector *sector, bool internal, int interesting_faces ) = 0;
 	//virtual void CullSectorInternal( ZVoxelSector *sector );
 	//virtual void CullSectorEdges( ZVoxelSector *sector );
 
