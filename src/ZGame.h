@@ -243,6 +243,8 @@ class ZGame
 
 			 page_up = PAGE_MAIN_MENU;
 			 prior_page_up = -1;
+			 for( int r = 0; r < 6; r++ )
+				 sack_camera[r] = 0;
 			 //Menu_Up = false;
 			 //OptionScreen_Up = false;
              Game_Run = false;
@@ -256,6 +258,8 @@ class ZGame
              Initialized_GameStats = false;
              WorldInfo = 0;
              ShipCenter = 0;
+			 Mouse_captured = false;
+			 Mouse_relative = false;
              Enable_MVI = true;
              Enable_LoadNewSector = true;
              Enable_NewSectorRendering = true;
@@ -299,6 +303,7 @@ class ZGame
 
   // Game Loop continue flag
   bool Mouse_relative;
+  bool Mouse_captured;
   int page_up;
   int prior_page_up;
   bool Game_Run;
@@ -371,6 +376,7 @@ class ZGame
   SDL_Window * screen;
 #endif
   int display_index;
+  PTRANSFORM sack_camera[6];  // this is used for mouse collision... need to update this..
   ZVector2L ScreenResolution;   // Taille réelle de la zone d'affichage.
   ZVector2L HardwareResolution; // Resolution qui est demandée à SDL.
   ZVector2L DesktopResolution;  // Résolution du bureau.
