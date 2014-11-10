@@ -842,13 +842,15 @@ void ZRender_Smooth::Render( bool use_external_matrix )
 			  Camera->orientation.z_axis() * ( GlobalSettings.VoxelBlockSize * -(Actor->VoxelSelectDistance) );
 		  //In.MaxCubeIterations = 6;
 
-		  ZVoxelRef *v = World->GetVoxelRefPlayerCoord( a.x, a.y, a.z );
+		  ZVoxelRef v ;
+			  if( World->GetVoxelRefPlayerCoord( v, a.x, a.y, a.z ) )
+			  {
 			//World->RayCast_Vector(Camera->orientation, Tmp, &In, PointedVoxel);
-			PointedVoxel->PredPointedVoxel.x = v->x;
-			PointedVoxel->PredPointedVoxel.y = v->y;
-			PointedVoxel->PredPointedVoxel.z = v->z;
-			delete v ;
-		  PointedVoxel->Collided = true;
+			PointedVoxel->PredPointedVoxel.x = v.x + v.Sector->Pos_x;
+			PointedVoxel->PredPointedVoxel.y = v.y + v.Sector->Pos_y;
+			PointedVoxel->PredPointedVoxel.z = v.z + v.Sector->Pos_z;
+			PointedVoxel->Collided = true;
+			  }
         if (BvProp_DisplayVoxelSelector) 
 			Render_VoxelSelector( &PointedVoxel->PredPointedVoxel, 0.2,1.0,0.1 );
 	  }

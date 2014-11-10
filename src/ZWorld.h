@@ -169,12 +169,12 @@ private:
     inline bool   GetVoxelLocation(VoxelLocation * OutLocation, const ZVector3L * Coords);
 
 
-    inline ZVoxelRef *GetVoxelRef(Long x, Long y, Long z);        // Get the voxel at the specified location. Fail with the "voxel not defined" voxeltype 65535 if the sector not in memory.
+    inline bool GetVoxelRef(ZVoxelRef &result, Long x, Long y, Long z);        // Get the voxel at the specified location. Fail with the "voxel not defined" voxeltype 65535 if the sector not in memory.
     inline UShort GetVoxel(Long x, Long y, Long z);        // Get the voxel at the specified location. Fail with the "voxel not defined" voxeltype 65535 if the sector not in memory.
     inline UShort GetVoxel(ZVector3L * Coords);            // Idem but take coords in another form.
     inline UShort GetVoxel_Secure(Long x, Long y, Long z); // Secure version doesn't fail if sector not loaded. The sector is loaded or created if needed.
     inline UShort GetVoxelExt(Long x, Long y, Long z, ZMemSize & OtherInfos);
-    inline ZVoxelRef *GetVoxelRefPlayerCoord(double x, double y, double z);
+    inline bool GetVoxelRefPlayerCoord(ZVoxelRef &result,double x, double y, double z);
     inline UShort GetVoxelPlayerCoord(double x, double y, double z);
     inline UShort GetVoxelPlayerCoord_Secure(double x, double y, double z);
 
@@ -355,7 +355,7 @@ private:
 
 };
 
-inline ZVoxelRef *ZVoxelWorld::GetVoxelRefPlayerCoord(double x, double y, double z)
+inline bool ZVoxelWorld::GetVoxelRefPlayerCoord(ZVoxelRef &result, double x, double y, double z)
 {
   ELong lx,ly,lz;
 
@@ -363,7 +363,7 @@ inline ZVoxelRef *ZVoxelWorld::GetVoxelRefPlayerCoord(double x, double y, double
   ly = (((ELong)y) >> GlobalSettings.VoxelBlockSizeBits);
   lz = (((ELong)z) >> GlobalSettings.VoxelBlockSizeBits);
 
-  return( GetVoxelRef ((Long)lx,(Long)ly,(Long)lz) );
+  return( GetVoxelRef (result, (Long)lx,(Long)ly,(Long)lz) );
 }
 
 inline UShort ZVoxelWorld::GetVoxelPlayerCoord(double x, double y, double z)
@@ -448,20 +448,19 @@ inline void ZVoxelWorld::Convert_Location_ToCoords(VoxelLocation * InLoc, ZVecto
 }
 
 
-inline ZVoxelRef *ZVoxelWorld::GetVoxelRef(Long x, Long y, Long z)
+inline bool ZVoxelWorld::GetVoxelRef(ZVoxelRef &result, Long x, Long y, Long z)
 {
-  ZVoxelSector * Sector;
-  Long Offset;
+  result.Sector = FindSector( x>>ZVOXELBLOCSHIFT_X , y>>ZVOXELBLOCSHIFT_Y , z>>ZVOXELBLOCSHIFT_Z );
 
-  Sector = FindSector( x>>ZVOXELBLOCSHIFT_X , y>>ZVOXELBLOCSHIFT_Y , z>>ZVOXELBLOCSHIFT_Z );
+  if (!result.Sector) return false;
 
-  if (!Sector) return NULL;
-
-  Offset =  (y & ZVOXELBLOCMASK_Y)
-         + ((x & ZVOXELBLOCMASK_X) <<  ZVOXELBLOCSHIFT_Y )
-         + ((z & ZVOXELBLOCMASK_Z) << (ZVOXELBLOCSHIFT_Y + ZVOXELBLOCSHIFT_X));
-
-  return new ZVoxelRef( this, VoxelTypeManager, x, y, z, Sector, Sector->Data[Offset], Offset );
+  result.Offset =  (result.y = y & ZVOXELBLOCMASK_Y)
+         + ((result.x = x & ZVOXELBLOCMASK_X) <<  ZVOXELBLOCSHIFT_Y )
+         + ((result.z = z & ZVOXELBLOCMASK_Z) << (ZVOXELBLOCSHIFT_Y + ZVOXELBLOCSHIFT_X));
+  result.VoxelType = result.Sector->Data[result.Offset];
+  result.World = this;
+  result.VoxelTypeManager = VoxelTypeManager;
+  return true;
 }
 
 

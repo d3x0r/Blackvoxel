@@ -680,7 +680,8 @@ void ZVoxelCuller_Basic::CullSingleVoxel( int x, int y, int z )
 
   UShort * ExtFaceState;
   UShort * IntFaceState;
-  ZMemSize OtherInfos;
+  	//if( !world ) 
+//		return;// false;
 
   VoxelTypeTable = world->VoxelTypeManager->VoxelTable;
 
@@ -722,13 +723,6 @@ void ZVoxelCuller_Basic::CullSingleVoxel( int x, int y, int z )
 			 | ( VoxelType->Draw_TransparentRendering ? 4 : 0 );
 
   Voxel = *Voxel_Address[VOXEL_INCENTER];
-  OtherInfos = *(Sector[VOXEL_INCENTER]->OtherInfos + Offset[VOXEL_INCENTER]);
-
-  if (OtherInfos)
-  {
-    VoxelType = VoxelTypeTable[Voxel];
-    if (VoxelType->Is_HasAllocatedMemoryExtension) VoxelType->DeleteVoxelExtension(OtherInfos);
-  }
 
   // Storing Extension
 
@@ -736,7 +730,7 @@ void ZVoxelCuller_Basic::CullSingleVoxel( int x, int y, int z )
 
   // Storing Voxel
 
-  if (VoxelTypeTable[*Voxel_Address[VOXEL_INCENTER]]->Is_Active) Sector[VOXEL_INCENTER]->Flag_IsActiveVoxels = true;
+  if (VoxelType->Is_Active) Sector[VOXEL_INCENTER]->Flag_IsActiveVoxels = true;
 
   // Getting case subtables.
 
@@ -1440,17 +1434,18 @@ void ZRender_Basic::Render( bool use_external_matrix )
 	  {
 		  ZVector3d a = Camera->orientation.origin() +
 			  Camera->orientation.z_axis() * ( GlobalSettings.VoxelBlockSize * (Actor->VoxelSelectDistance) );
-		  //In.MaxCubeIterations = 6;
 
-		  ZVoxelRef *v = World->GetVoxelRefPlayerCoord( a.x, a.y, a.z );
-			//World->RayCast_Vector(Camera->orientation, Tmp, &In, PointedVoxel);
-			PointedVoxel->PredPointedVoxel.x = v->x;
-			PointedVoxel->PredPointedVoxel.y = v->y;
-			PointedVoxel->PredPointedVoxel.z = v->z;
-			delete v ;
-		  PointedVoxel->Collided = true;
-        if (BvProp_DisplayVoxelSelector) 
-			Render_VoxelSelector( &PointedVoxel->PredPointedVoxel, 0.2,1.0,0.1 );
+		  ZVoxelRef v;
+			  if( World->GetVoxelRefPlayerCoord( v, a.x, a.y, a.z ) )
+			  {
+				//World->RayCast_Vector(Camera->orientation, Tmp, &In, PointedVoxel);
+				  PointedVoxel->PredPointedVoxel.x = v.x + v.Sector->Pos_x << ZVOXELBLOCSHIFT_X;
+				  PointedVoxel->PredPointedVoxel.y = v.y + v.Sector->Pos_y << ZVOXELBLOCSHIFT_Y;
+				  PointedVoxel->PredPointedVoxel.z = v.z + v.Sector->Pos_z << ZVOXELBLOCSHIFT_Z;
+				  PointedVoxel->Collided = true;
+			  }
+			if (BvProp_DisplayVoxelSelector) 
+				Render_VoxelSelector( &PointedVoxel->PredPointedVoxel, 0.2,1.0,0.1 );
 	  }
     }
 

@@ -1360,10 +1360,13 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								}
 								{
 									int val;
-									ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-									val = f( v );
-									if( val )
-										return val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
 								}
 							}
 						}
@@ -1395,10 +1398,13 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								}
 								{
 									int val;
-									ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-									val = f( v );
-									if( val )
-										return val;
+									ZVoxelRef v;
+									if( World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
 								}
 							}
 						}
@@ -1429,13 +1435,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								errz -= abs_y;
 								z += incz;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1460,13 +1469,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								erry -= abs_x;
 								y += incy;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1488,13 +1500,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								errx -= abs_y;
 								x += incx;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1521,13 +1536,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								errz -= abs_x;
 								z += incx;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1548,13 +1566,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								errx -= abs_z;
 								x += incx;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1566,10 +1587,13 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 				for( int x = v1->x + incx; x != v2->x; x += incx )
 				{
 					int val;
-					ZVoxelRef *v = World->GetVoxelRef( x, v1->y, v1->z );
-					val = f( v );
-					if( val )
-						return val;
+					ZVoxelRef v;
+					if(  World->GetVoxelRef( v, x, v1->y, v1->z ) )
+					{
+						val = f( &v );
+						if( val )
+							return val;
+					}
 				}
 			}
 		}
@@ -1597,13 +1621,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								errz -= abs_y;
 								z += incz;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1624,13 +1651,16 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 								erry -= abs_z;
 								y += incy;
 							}
-							{
-								int val;
-								ZVoxelRef *v = World->GetVoxelRef( x, y, z );
-								val = f( v );
-								if( val )
-									return val;
-							}
+								{
+									int val;
+									ZVoxelRef v;
+									if(  World->GetVoxelRef( v, x, y, z ) )
+									{
+										val = f( &v );
+										if( val )
+											return val;
+									}
+								}
 						}
 					}
 				}
@@ -1643,10 +1673,13 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 				for( int y = v1->y + incy; y != v2->y; y += incy )
 				{
 					int val;
-					ZVoxelRef *v = World->GetVoxelRef( v1->x, y, v1->z );
-					val = f( v );
-					if( val )
-						return val;
+					ZVoxelRef v;
+					if( World->GetVoxelRef( v, v1->x, y, v1->z ) )
+					{
+						val = f( &v );
+						if( val )
+							return val;
+					}
 				}
 			}
 		}
@@ -1659,19 +1692,25 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					for( int z = v1->z + 1; z < v2->z; z++ )
 					{
 						int val;
-						ZVoxelRef *v = World->GetVoxelRef( v1->x, v1->y, z );
-						val = f( v );
+						ZVoxelRef v;
+						if(  World->GetVoxelRef( v, v1->x, v1->y, z ) )
+						{
+						val = f( &v );
 						if( val )
 							return val;
+						}
 					}
 				else
 					for( int z = v2->z + 1; z < v1->z; z++ )
 					{
 						int val;
-						ZVoxelRef *v = World->GetVoxelRef( v1->x, v1->y, z );
-						val = f( v );
-						if( val )
-							return val;
+						ZVoxelRef v;
+						if(  World->GetVoxelRef( v, v1->x, v1->y, z ) )
+						{
+							val = f( &v );
+							if( val )
+								return val;
+						}
 					}
 
 			}
@@ -1697,7 +1736,7 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   ZVector3d P[32];
   Bool PEnable[32];
   bool PInvert[32];
-  ZVoxelRef *RealVoxel[32];
+  ZVoxelRef RealVoxel[32];
   UShort Voxel[32];
   bool   IsEmpty[32];
   ZVoxelType * VoxelType[32];
@@ -1779,21 +1818,19 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   World = PhysicsEngine->World;
   for (i=0;i<24;i++)
   {
-    RealVoxel[i]     = World->GetVoxelRefPlayerCoord(P[i].x,P[i].y,P[i].z);
-    Voxel[i]     = RealVoxel[i]?RealVoxel[i]->Sector->Data[RealVoxel[i]->Offset]:0;
+    if( World->GetVoxelRefPlayerCoord(RealVoxel[i], P[i].x,P[i].y,P[i].z) )
+		Voxel[i]     = RealVoxel[i].VoxelType;
+	else
+		Voxel[i] = 0;
     VoxelType[i] = GameEnv->VoxelTypeManager.VoxelTable[Voxel[i]];
     IsEmpty[i]   = VoxelType[i]->Is_PlayerCanPassThrough;
   }
 
   // Detect player is on ground
   int space_empty;
-  space_empty = ZVoxelRef::ForEachVoxel( World, RealVoxel[16], RealVoxel[17], TestIsEmpty );
+  space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[16], &RealVoxel[17], TestIsEmpty );
   if( !space_empty )
-	  space_empty = ZVoxelRef::ForEachVoxel( World, RealVoxel[16], RealVoxel[17], TestIsEmpty );
-   for (i=0;i<24;i++)
-  {
-    delete RealVoxel[i];
-  }
+	  space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[16], &RealVoxel[17], TestIsEmpty );
 
   if ( IsEmpty[16] && IsEmpty[17] && IsEmpty[18] && IsEmpty[19] ) IsOnGround = false;
   else                                                            IsOnGround = true;
