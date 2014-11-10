@@ -468,8 +468,10 @@ void ZVoxelReactor::ProcessSectors( double LastLoopTime )
       Long RSx = Sector->Pos_x << ZVOXELBLOCSHIFT_X;
       Long RSy = Sector->Pos_y << ZVOXELBLOCSHIFT_Y;
       Long RSz = Sector->Pos_z << ZVOXELBLOCSHIFT_Z;
-	  ZVoxelRef ref(World,VoxelTypeManager, 0,0,0,Sector );
-
+	  ZVoxelRef ref;
+	  ref.World = World;
+	  ref.VoxelTypeManager = VoxelTypeManager;
+	  ref.Sector = Sector;
       for (z = 0; z < ZVOXELBLOCSIZE_Z; z++)
         for (x = 0; x < ZVOXELBLOCSIZE_X; x++)
           for (y = 0; y < ZVOXELBLOCSIZE_Y; y++)
