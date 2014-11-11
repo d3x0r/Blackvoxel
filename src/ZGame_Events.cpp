@@ -735,8 +735,8 @@ void ZGame_Events::Process_StillEvents()
       VoxelLocation Loc;
       if (GameEnv->World->GetVoxelLocation(&Loc, x,y,z))
       {
-        printf("Voxel Name : %s\n", GameEnv->VoxelTypeManager.VoxelTable[ Loc.Sector->Data[Loc.Offset] ]->VoxelTypeName.String);
-        GameEnv->VoxelTypeManager.VoxelTable[ Loc.Sector->Data[Loc.Offset] ]->GetBlockInformations( &Loc, Infos );
+        printf("Voxel Name : %s\n", GameEnv->VoxelTypeManager.VoxelTable[ Loc.Sector->Data[Loc.Offset].Data ]->VoxelTypeName.String);
+        GameEnv->VoxelTypeManager.VoxelTable[ Loc.Sector->Data[Loc.Offset].Data ]->GetBlockInformations( &Loc, Infos );
         printf("Sector Location : %d,%d,%d\n", Loc.Sector->Pos_x , Loc.Sector->Pos_y, Loc.Sector->Pos_z);
         printf("Zone Coords : %d,%d\n",(((Loc.Sector->Pos_x) >> 4) + 32 +1 ), (((Loc.Sector->Pos_z) >> 4) + 32 +1 ));
         printf("%s\n",Infos.String);
