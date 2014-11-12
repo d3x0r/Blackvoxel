@@ -17,17 +17,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * ZVoxelType_BlastFurnace.h
+ * ZVoxelType_AromaGenerator.h
  *
  *  Created on: 4 févr. 2013
  *      Author: laurent
  */
 
-#ifndef Z_VOXELTYPE_FERTILEGROUND_H
-#define Z_VOXELTYPE_FERTILEGROUND_H
+#ifndef Z_VOXELTYPE_AROMAGENERATOR_H
+#define Z_VOXELTYPE_AROMAGENERATOR_H
 
 //#ifndef Z_VOXELTYPE_BLASTFURNACE_H
-//#  include "ZVoxelType_BlastFurnace.h"
+//#  include "ZVoxelType_AromaGenerator.h"
 //#endif
 
 #ifndef Z_ZVOXELTYPE_H
@@ -35,12 +35,13 @@
 #endif
 #include "ZWorld.h"
 
-class ZVoxelType_FertileGround : public ZVoxelType
+class ZVoxelType_AromaGenerator : public ZVoxelType
 {
   public:
-    ZVoxelType_FertileGround(ULong VoxelType) : ZVoxelType(VoxelType)
+    ZVoxelType_AromaGenerator(ULong VoxelType) : ZVoxelType(VoxelType)
     {
       Is_VoxelExtension = true;
+	  Is_CanBeReplacedBy_Water = false;
       Is_HasAllocatedMemoryExtension = true;
     }
 

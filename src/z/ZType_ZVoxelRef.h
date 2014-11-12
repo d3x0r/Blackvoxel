@@ -30,7 +30,7 @@ public:
 		VoxelTypeManager = vtm;
 	}
 	*/
-	static int ForEachVoxel( ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2, int (*f)(ZVoxelRef *v) );
+	static int ForEachVoxel( ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2, int (*f)(ZVoxelRef *v), bool not_zero );
 
 };
 

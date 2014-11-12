@@ -8,6 +8,6 @@ ZGlobalSettings GlobalSettings;
 
 ZGlobalSettings::ZGlobalSettings()
 {
-	VoxelBlockSizeBits = 8;
+	VoxelBlockSizeBits = 7;
 	VoxelBlockSize = 1 << VoxelBlockSizeBits;
 }

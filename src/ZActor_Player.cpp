@@ -195,8 +195,6 @@ void ZActor_Player::SetPosition( ZVector3d &NewLocation )
 {
 	ViewDirection.translate( NewLocation );
 
-	if( ActorMode == 0 )  // make sure we're standing up.
-		ViewDirection.RotateRoll( -ViewDirection.roll() );
   Camera.orientation = ViewDirection;//.orientation;
   Camera.orientation.translate_rel( EyesPosition.x, EyesPosition.y,EyesPosition.z );
   //Camera.orientation.RotateRoll( -Camera.orientation.roll() );
@@ -464,16 +462,18 @@ bool ZActor_Player::Save( ZStream_SpecialRamStream * OutStream )
 bool ZActor_Player::Save( ZStream_SpecialRamStream * OutStream )
 {
   ULong *Size,StartLen,*ExtensionSize,EndLen, StartExtensionLen;
-  OutStream->PutString("BLKPLYR3");
+  OutStream->PutString("BLKPLYR4");
   OutStream->Put( (UShort)3); // Version
   OutStream->Put( (UShort)3); // Compatibility Class;
   Size = OutStream->GetPointer_ULong();
   OutStream->Put((ULong)0xA600DBED); // Size of the chunk, will be written later.
   StartLen = OutStream->GetActualBufferLen();
 
-  OutStream->Put( ViewDirection.origin().x ); OutStream->Put( ViewDirection.origin().y ); OutStream->Put( ViewDirection.origin().z );
+  ZVector3d position = ViewDirection.origin() * 256.0/GlobalSettings.VoxelBlockSize;
+
+  OutStream->Put( position.x ); OutStream->Put( position.y ); OutStream->Put( position.z );
   OutStream->Put( Velocity.x ); OutStream->Put( Velocity.y ); OutStream->Put( Velocity.z );
-  OutStream->Put( Deplacement.x ); OutStream->Put( Deplacement.y ); OutStream->Put( Deplacement.z );
+  //OutStream->Put( Deplacement.x ); OutStream->Put( Deplacement.y ); OutStream->Put( Deplacement.z );
   OutStream->Put( ViewDirection.quat()[0] ); OutStream->Put( ViewDirection.quat()[1] ); OutStream->Put( ViewDirection.quat()[2] ); OutStream->Put( ViewDirection.quat()[3] );
   //OutStream->Put( ViewDirection.pitch() ); OutStream->Put( ViewDirection.roll ); OutStream->Put( ViewDirection.yaw );
   //OutStream->Put( Camera.x() ); OutStream->Put( Camera.y() ); OutStream->Put( Camera.z() );
@@ -615,12 +615,86 @@ bool ZActor_Player::Load( ZStream_SpecialRamStream * InStream)
   if (Section_Name == "BLKPLYR3")
   {
     Ok &= InStream->Get( ViewDirection.origin().x ); InStream->Get( ViewDirection.origin().y ); InStream->Get( ViewDirection.origin().z );
+	ViewDirection.origin() *= GlobalSettings.VoxelBlockSize/256.0;
     Ok &= InStream->Get( Velocity.x ); InStream->Get( Velocity.y ); InStream->Get( Velocity.z );
     Ok &= InStream->Get( Deplacement.x ); InStream->Get( Deplacement.y ); InStream->Get( Deplacement.z );
 	//double v[3];
     //Ok &= InStream->Get( v[0] ); InStream->Get( ViewDirection.roll ); InStream->Get( ViewDirection.yaw );
 	//ViewDirection.RotatePitch
-    
+	    
+	double v[4];
+    Ok &= InStream->Get( v[0] ); InStream->Get( v[1] ); InStream->Get( v[2] ); InStream->Get( v[3] );
+	//Camera.orientation.rotate( v[0], v[1], v[2] );
+	ViewDirection.quat( v );
+    //Ok &= InStream->Get( Camera.x() ); InStream->Get( Camera.y() ); InStream->Get( Camera.z() );
+    //Ok &= InStream->Get( v[0] ); InStream->Get( v[1] ); InStream->Get( v[2] );
+	//Camera.orientation.translate( v[0], v[1], v[2] );
+	//double q[4];
+    //Ok &= InStream->Get( q[0] ); InStream->Get( q[1] ); InStream->Get( q[2] ); 
+	//InStream->Get( q[3] );
+	//Camera.orientation.RotateAbsolute( q[0], q[1], q[2] );
+	//Camera.orientation.quat( q );
+	//ViewDirection.quat( q );
+	SetPosition( ViewDirection.origin() );
+    //Ok &= InStream->Get( Camera.Pitch ); InStream->Get( Camera.Roll ); InStream->Get( Camera.Yaw );
+    Ok &= InStream->Get( Tmp_UL ); LifePoints = Tmp_UL; // Corrected
+    if (!Ok) return(false);
+
+    if (!Inventory->Load(InStream)) return(false);
+
+    // New for version 2
+
+    ULong ExtensionBlocSize;
+    bool IsExtensionToLoad;
+
+    Ok &= InStream->Get(ActorMode);
+    Ok &= InStream->Get(IsInLiquid);
+    Ok &= InStream->Get(IsFootInLiquid);
+    Ok &= InStream->Get(IsHeadInLiquid);
+    Ok &= InStream->Get(LocationDensity);
+
+    Ok &= InStream->Get(Riding_IsRiding);
+    Ok &= InStream->Get(Riding_Voxel);
+    Ok &= InStream->Get(Tmp_UL); Riding_VoxelInfo = Tmp_UL; // Corrected
+    Ok &= InStream->Get(PlaneSpeed);
+    Ok &= InStream->Get(PlaneCommandResponsiveness);
+    Ok &= InStream->Get(PlaneEngineThrust);
+    Ok &= InStream->Get(PlaneEngineOn);
+    Ok &= InStream->Get(PlaneTakenOff);
+    Ok &= InStream->Get(PlaneLandedCounter);
+    Ok &= InStream->Get(PlaneToohighAlt);
+
+    Ok &= InStream->Get(Time_TotalGameTime); // New for V3
+    Ok &= InStream->Get(Time_ElapsedTimeSinceLastRespawn); // New for V3
+
+    Ok &= InStream->GetStringFixedLen(Section_Name.String,8);
+    if (!(Ok && Section_Name == "RIDEXTEN" )) return(false);
+
+    Ok &= InStream->Get(ExtensionBlocSize);
+
+    Ok &= InStream->Get(IsExtensionToLoad);
+    if (!Ok) return(false);
+    if (GameEnv->VoxelTypeManager.VoxelTable[Riding_Voxel]->Is_HasAllocatedMemoryExtension)
+    {
+      Riding_VoxelInfo = (ZMemSize)GameEnv->VoxelTypeManager.VoxelTable[Riding_Voxel]->CreateVoxelExtension(); if (Riding_VoxelInfo == 0 ) return(false);
+      if (IsExtensionToLoad)
+      {
+        ((ZVoxelExtension * )Riding_VoxelInfo)->Load(InStream);
+      }
+    }
+    return(true);
+  }
+
+  if (Section_Name == "BLKPLYR4")
+  {
+    Ok &= InStream->Get( ViewDirection.origin().x ); InStream->Get( ViewDirection.origin().y ); InStream->Get( ViewDirection.origin().z );
+	ViewDirection.origin() *= GlobalSettings.VoxelBlockSize/256.0;
+    Ok &= InStream->Get( Velocity.x ); InStream->Get( Velocity.y ); InStream->Get( Velocity.z );
+    //Ok &= InStream->Get( Deplacement.x ); InStream->Get( Deplacement.y ); InStream->Get( Deplacement.z );
+	//double v[3];
+    //Ok &= InStream->Get( v[0] ); InStream->Get( ViewDirection.roll ); InStream->Get( ViewDirection.yaw );
+	//ViewDirection.RotatePitch
+	    
 	double v[4];
     Ok &= InStream->Get( v[0] ); InStream->Get( v[1] ); InStream->Get( v[2] ); InStream->Get( v[3] );
 	//Camera.orientation.rotate( v[0], v[1], v[2] );
@@ -1315,16 +1389,25 @@ void ZActor_Player::DoPhysic_Plane_Old(double CycleTime)
 
 
 
-int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2, int (*f)(ZVoxelRef *v) )
+int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2, int (*f)(ZVoxelRef *v), bool not_zero )
 {
 	if( !v1 || !v2 )
-		return 0;
-	int del_x = v2->x - v1->x;
-	int del_y = v2->y - v1->y;
-	int del_z = v2->z - v1->z;
+		return not_zero;
+	if( !v1->Sector || !v2->Sector )
+		return not_zero;
+	int v1x = v1->x + ( v1->Sector->Pos_x << ZVOXELBLOCSHIFT_X );
+	int v1y = v1->y + ( v1->Sector->Pos_y << ZVOXELBLOCSHIFT_Y );
+	int v1z = v1->z + ( v1->Sector->Pos_z << ZVOXELBLOCSHIFT_Z );
+	int v2x = v2->x + ( v2->Sector->Pos_x << ZVOXELBLOCSHIFT_X );
+	int v2y = v2->y + ( v2->Sector->Pos_y << ZVOXELBLOCSHIFT_Y );
+	int v2z = v2->z + ( v2->Sector->Pos_z << ZVOXELBLOCSHIFT_Z );
+	int del_x = v2x - v1x;
+	int del_y = v2y - v1y;
+	int del_z = v2z - v1z;
 	int abs_x = del_x<0?-del_x:del_x;
 	int abs_y = del_y<0?-del_y:del_y;
 	int abs_z = del_z<0?-del_z:del_z;
+	// cannot use iterate if either end is undefined.
 	if( del_x )
 	{
 		if( del_y )
@@ -1342,9 +1425,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 						int incx = del_x<0?-1:1;
 						int incz = del_z<0?-1:1;
 						{
-							int x = v1->x;
-							int y = v1->y;
-							for( int z = v1->z + incz; z != v2->z; z += incz )
+							int x = v1x;
+							int y = v1y;
+							for( int z = v1z + incz; z != v2z; z += incz )
 							{
 								errx += abs_x;
 								if( errx > 0 )
@@ -1364,7 +1447,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1380,9 +1463,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 						int incx = del_x<0?-1:1;
 						int incz = del_z<0?-1:1;
 						{
-							int y = v1->y;
-							int z = v1->z;
-							for( int x = v1->x + incx; x != v2->x; x += incx )
+							int y = v1y;
+							int z = v1z;
+							for( int x = v1x + incx; x != v2x; x += incx )
 							{
 								errz += abs_z;
 								if( errz > 0 )
@@ -1402,7 +1485,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if( World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1419,9 +1502,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incx = del_x<0?-1:1;
 					int incz = del_z<0?-1:1;
 					{
-						int x = v1->x;
-						int z = v1->x;
-						for( int y = v1->y + incy; y != v2->y; y += incy )
+						int x = v1x;
+						int z = v1x;
+						for( int y = v1y + incy; y != v2y; y += incy )
 						{
 							errx += abs_x;
 							if( errx > 0 )
@@ -1441,7 +1524,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1459,9 +1542,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incy = del_y<0?-1:1;
 					int incx = del_x<0?-1:1;
 					{
-						int y = v1->y;
-						int z = v1->z;
-						for( int x = v1->x + incx; x != v2->x; x += incx )
+						int y = v1y;
+						int z = v1z;
+						for( int x = v1x + incx; x != v2x; x += incx )
 						{
 							erry += abs_y;
 							if( erry > 0 )
@@ -1475,7 +1558,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1490,9 +1573,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incx = del_x<0?-1:1;
 					// z is longest path
 					{
-						int x = v1->x;
-						int z = v1->x;
-						for( int y = v1->y + incy; y != v2->y; y += incy )
+						int x = v1x;
+						int z = v1x;
+						for( int y = v1y + incy; y != v2y; y += incy )
 						{
 							errx += abs_x;
 							if( errx > 0 )
@@ -1506,7 +1589,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1526,9 +1609,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incx = del_x<0?-1:1;
 					int incz = del_z<0?-1:1;
 					{
-						int y = v1->y;
-						int z = v1->z;
-						for( int x = v1->x + incx; x != v2->x; x += incx )
+						int y = v1y;
+						int z = v1z;
+						for( int x = v1x + incx; x != v2x; x += incx )
 						{
 							errz += abs_z;
 							if( errz > 0 )
@@ -1542,7 +1625,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1556,9 +1639,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incx = del_x<0?-1:1;
 					int incz = del_z<0?-1:1;
 					{
-						int x = v1->x;
-						int y = v1->y;
-						for( int z = v1->z + incz; z != v2->z; z += incz )
+						int x = v1x;
+						int y = v1y;
+						for( int z = v1z + incz; z != v2z; z += incz )
 						{
 							errx += abs_x;
 							if( errx > 0 )
@@ -1572,7 +1655,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1584,14 +1667,14 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 			{
 				// x is only changing.
 				int incx = del_x<0?-1:1;
-				for( int x = v1->x + incx; x != v2->x; x += incx )
+				for( int x = v1x + incx; x != v2x; x += incx )
 				{
 					int val;
 					ZVoxelRef v;
-					if(  World->GetVoxelRef( v, x, v1->y, v1->z ) )
+					if(  World->GetVoxelRef( v, x, v1y, v1z ) )
 					{
 						val = f( &v );
-						if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 							return val;
 					}
 				}
@@ -1611,9 +1694,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incy = del_y<0?-1:1;
 					int incz = del_z<0?-1:1;
 					{
-						int x = v1->x;
-						int z = v1->x;
-						for( int y = v1->y + incy; y != v2->y; y += incy )
+						int x = v1x;
+						int z = v1x;
+						for( int y = v1y + incy; y != v2y; y += incy )
 						{
 							errz += abs_z;
 							if( errz > 0 )
@@ -1627,7 +1710,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1641,9 +1724,9 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 					int incy = del_y<0?-1:1;
 					int incz = del_z<0?-1:1;
 					{
-						int x = v1->x;
-						int y = v1->y;
-						for( int z = v1->z + incz; z != v2->z; z += incz )
+						int x = v1x;
+						int y = v1y;
+						for( int z = v1z + incz; z != v2z; z += incz )
 						{
 							erry += abs_y;
 							if( erry > 0 )
@@ -1657,7 +1740,7 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 									if(  World->GetVoxelRef( v, x, y, z ) )
 									{
 										val = f( &v );
-										if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 											return val;
 									}
 								}
@@ -1670,14 +1753,14 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 				// no del_x, no del_z
 				// y is only changing.
 				int incy = del_y<0?-1:1;
-				for( int y = v1->y + incy; y != v2->y; y += incy )
+				for( int y = v1y + incy; y != v2y; y += incy )
 				{
 					int val;
 					ZVoxelRef v;
-					if( World->GetVoxelRef( v, v1->x, y, v1->z ) )
+					if( World->GetVoxelRef( v, v1x, y, v1z ) )
 					{
 						val = f( &v );
-						if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 							return val;
 					}
 				}
@@ -1689,26 +1772,26 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 			if( del_z )
 			{
 				if( del_z > 0 )
-					for( int z = v1->z + 1; z < v2->z; z++ )
+					for( int z = v1z + 1; z < v2z; z++ )
 					{
 						int val;
 						ZVoxelRef v;
-						if(  World->GetVoxelRef( v, v1->x, v1->y, z ) )
+						if(  World->GetVoxelRef( v, v1x, v1y, z ) )
 						{
 						val = f( &v );
-						if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 							return val;
 						}
 					}
 				else
-					for( int z = v2->z + 1; z < v1->z; z++ )
+					for( int z = v2z + 1; z < v1z; z++ )
 					{
 						int val;
 						ZVoxelRef v;
-						if(  World->GetVoxelRef( v, v1->x, v1->y, z ) )
+						if(  World->GetVoxelRef( v, v1x, v1y, z ) )
 						{
 							val = f( &v );
-							if( val )
+										if( (!not_zero && val ) || ( not_zero && !val ) )
 								return val;
 						}
 					}
@@ -1720,12 +1803,12 @@ int ZVoxelRef::ForEachVoxel(  ZVoxelWorld * World, ZVoxelRef *v1, ZVoxelRef *v2,
 			}
 		}
 	}
-	return 0;
+	return not_zero;
 }
 
-int TestIsEmpty( ZVoxelRef *v )
+int TestIsNotEmpty( ZVoxelRef *v )
 {
-	return !v->VoxelTypeManager->VoxelTable[v->VoxelType]->Is_PlayerCanPassThrough;
+	return v->VoxelTypeManager->VoxelTable[v->VoxelType]->Is_PlayerCanPassThrough;
 }
 
 
@@ -1743,8 +1826,6 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   ULong i;
   ZVoxelWorld * World;
   double DepLen;
-
-
 
 
   // Voxel Help System
@@ -1783,10 +1864,10 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   // front p[0], p[1], p[0],p[12], p[1], p[13], p[12], p[13] 
   // back p[0], p[1], p[0],p[12], p[1], p[13], p[12], p[13] 
 
-  P[0] = ViewDirection.origin() + ZVector3d(-75.0,+0.0,+75.0);
-  P[1] = ViewDirection.origin() + ZVector3d(+75.0,+0.0,+75.0);
-  P[2] = ViewDirection.origin() + ZVector3d(+75.0,+0.0,-75.0);
-  P[3] = ViewDirection.origin() + ZVector3d(-75.0,+0.0,-75.0);
+  P[0] = ViewDirection.origin() + ZVector3d(-75.0,+0.0,+75.0); // floor plane, left, forward
+  P[1] = ViewDirection.origin() + ZVector3d(+75.0,+0.0,+75.0); // floor plane, right, forward
+  P[2] = ViewDirection.origin() + ZVector3d(+75.0,+0.0,-75.0); // floor plane, left, back
+  P[3] = ViewDirection.origin() + ZVector3d(-75.0,+0.0,-75.0); // floor plane, right, back
 
   P[4] = ViewDirection.origin() + ZVector3d(-75.0,+128.0,+75.0);
   P[5] = ViewDirection.origin() + ZVector3d(+75.0,+128.0,+75.0);
@@ -1805,8 +1886,8 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
 
   P[16] = ViewDirection.origin() + ZVector3d(-70.0,-5.0,-70.0); // # Detection points below the player
   P[17] = ViewDirection.origin() + ZVector3d(+70.0,-5.0,-70.0); // # Used for Anti-Fall.
-  P[18] = ViewDirection.origin() + ZVector3d(+70.0,-5.0,+70.0); // #
-  P[19] = ViewDirection.origin() + ZVector3d(-70.0,-5.0,+70.0); // #
+  P[18] = ViewDirection.origin() + ZVector3d(+70.0,-5.0,+70.0); // #right;forward
+  P[19] = ViewDirection.origin() + ZVector3d(-70.0,-5.0,+70.0); // #left;forward
 
   P[20] = ViewDirection.origin() + ZVector3d(0,-5,0);  // # Detection point are only for voxel
   P[21] = ViewDirection.origin() + ZVector3d(0,0,0);   // #
@@ -1819,21 +1900,25 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   for (i=0;i<24;i++)
   {
     if( World->GetVoxelRefPlayerCoord(RealVoxel[i], P[i].x,P[i].y,P[i].z) )
-		Voxel[i]     = RealVoxel[i].VoxelType;
+		Voxel[i] = RealVoxel[i].VoxelType;
 	else
+	{
+		return;
 		Voxel[i] = 0;
+	}
     VoxelType[i] = GameEnv->VoxelTypeManager.VoxelTable[Voxel[i]];
     IsEmpty[i]   = VoxelType[i]->Is_PlayerCanPassThrough;
   }
 
   // Detect player is on ground
   int space_empty;
-  space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[16], &RealVoxel[17], TestIsEmpty );
-  if( !space_empty )
-	  space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[16], &RealVoxel[17], TestIsEmpty );
-
-  if ( IsEmpty[16] && IsEmpty[17] && IsEmpty[18] && IsEmpty[19] ) IsOnGround = false;
-  else                                                            IsOnGround = true;
+  space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[16], &RealVoxel[17], TestIsNotEmpty, true );
+	if( space_empty )
+		space_empty = ZVoxelRef::ForEachVoxel( World, &RealVoxel[18], &RealVoxel[19], TestIsNotEmpty, true );
+  if ( !space_empty ) IsOnGround = true;
+  else                                                            IsOnGround = false;
+  //if ( IsEmpty[16] && IsEmpty[17] && IsEmpty[18] && IsEmpty[19] ) IsOnGround = false;
+  //else                                                            IsOnGround = true;
 
   // Detect if player is in liquid and compute the mean density.
 
@@ -1936,8 +2021,9 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
     if      (CubeY > 10000.0 && CubeY < 15000.0) { Gravity = 5.0 - (( (CubeY-10000.0) * (CubeY-10000.0)) / 5000000.0); } //5000000.0;
     else if (CubeY <= 10000.0) { Gravity = 5.0; }
     else                       { Gravity = 0.0; }
-
-    Velocity.y -= (PlayerDensity - LocationDensity) * Gravity * CycleTime;
+  if (!this->Flag_ActivateAntiFall)
+	if( !IsOnGround )
+		Velocity.y -= (PlayerDensity - LocationDensity) * Gravity * CycleTime;
 
     //printf("Gravity %lf y: %lf\n",Gravity, CubeY);
 
@@ -2047,9 +2133,13 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
   // ****
 
   Continue = true;
-  if ( (Dep.x == 0) && (Dep.y == 0) && (Dep.z == 0.0) ) { Continue = false; 
+  double roll = 0;
+  	if( ActorMode == 0 )  // make sure we're standing up.
+		ViewDirection.RotateRoll( roll = -ViewDirection.roll() );
+  if ( ( roll == 0 ) && (Dep.x == 0) && (Dep.y == 0) && (Dep.z == 0.0) ) { Continue = false; 
 
-	return; }
+	return;
+  }
 
   // printf("Loc: %lf %lf %lf\n",ViewDirection.origin().x,ViewDirection.origin().y,ViewDirection.origin().z);
 
@@ -2067,6 +2157,10 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
       if (PEnable[i]) // (PEnable[i])
       {
         bool ret;
+	   if (this->Flag_ActivateAntiFall)
+		   ret = 0;
+	   else
+	   {
         if (PInvert[i]) ret = World->RayCast_Vector_special(P[i],Dep/DepLen , &In, &(Out[i]), PInvert[i]); // If anti fall points, use special routine and invert empty/full detection.
 		else            ret = World->RayCast_Vector(P[i],Dep/DepLen , &In, &(Out[i]), PInvert[i]);         // Normal points.
 
@@ -2074,6 +2168,7 @@ void ZActor_Player::DoPhysic_GroundPlayer(double CycleTime)
         {
           if (Out[i].CollisionDistance < DistanceMin ) { Collided = true; DistanceMin = Out[i].CollisionDistance; CollisionIndice = i; }
         }
+	   }
       }
     }
     // printf("\n");

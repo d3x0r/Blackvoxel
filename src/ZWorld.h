@@ -452,11 +452,12 @@ inline bool ZVoxelWorld::GetVoxelRef(ZVoxelRef &result, Long x, Long y, Long z)
 {
   result.Sector = FindSector( x>>ZVOXELBLOCSHIFT_X , y>>ZVOXELBLOCSHIFT_Y , z>>ZVOXELBLOCSHIFT_Z );
 
-  if (!result.Sector) return false;
-
   result.Offset =  (result.y = y & ZVOXELBLOCMASK_Y)
          + ((result.x = x & ZVOXELBLOCMASK_X) <<  ZVOXELBLOCSHIFT_Y )
          + ((result.z = z & ZVOXELBLOCMASK_Z) << (ZVOXELBLOCSHIFT_Y + ZVOXELBLOCSHIFT_X));
+
+  if (!result.Sector) return false;
+
   result.VoxelType = result.Sector->Data[result.Offset].Data;
   result.World = this;
   result.VoxelTypeManager = VoxelTypeManager;

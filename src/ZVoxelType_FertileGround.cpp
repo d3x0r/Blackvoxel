@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
- * ZVoxelType_BlastFurnace.cpp
+ * ZVoxelType_FertileGorund.cpp
  *
  *  Created on: 4 févr. 2013
  *      Author: laurent
@@ -41,7 +41,7 @@ ZVoxelExtension * ZVoxelType_FertileGround::CreateVoxelExtension(bool IsLoadingP
   return (NewVoxelExtension);
 }
 
-void ZVoxelType_FertileGround::React( const ZVoxelRef &self, double tick )
+bool ZVoxelType_FertileGround::React( const ZVoxelRef &self, double tick )
 {
 	ZVoxelExtension_FertileGround *instance = (ZVoxelExtension_FertileGround *)self.VoxelExtension;
 	instance->time_since_spawn += tick;
@@ -58,8 +58,10 @@ void ZVoxelType_FertileGround::React( const ZVoxelRef &self, double tick )
 			self.World->SetVoxel_WithCullingUpdate(RSx + self.x , RSy + self.y + 1, RSz + self.z , 236, ZVoxelSector::CHANGE_CRITICAL);                                         
 		}
 		instance->time_since_spawn = 0;
+		return false;
 	}
 	//lprintf( "Ground react at %g", tick );
+	return true;
 }
 
 

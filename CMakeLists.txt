@@ -78,6 +78,7 @@ src/ZTextureManager.cpp
 src/ZTileSets.cpp
 src/ZTools.cpp
 src/ZTool_Constructor.cpp
+src/ZVoxelExtension.cpp
 src/ZVoxelExtension_FabMachine.cpp
 src/ZVoxelExtension_MiningRobot_xr1.cpp
 src/ZvoxelExtension_Programmable.cpp
@@ -94,6 +95,8 @@ src/ZVoxelType.cpp
 src/ZVoxelTypeManager.cpp
 src/ZVoxelType_BlastFurnace.cpp
 src/ZVoxelType_Food.cpp
+src/ZVoxelType_AromaGenerator.cpp
+src/ZVoxelType_Aroma.cpp
 src/ZVoxelType_FertileGround.cpp
 src/ZVoxelType_Animal.cpp
 src/ZVoxelType_Concrete.cpp
@@ -246,6 +249,11 @@ src/ZVoxelType.h
 src/ZVoxelTypeManager.h
 src/ZVoxelType_BlastFurnace.h
 src/ZVoxelType_Food.h
+src/ZVoxelExtension_AromaGenerator.h
+src/ZVoxelType_AromaGenerator.h
+src/ZVoxelExtension_Aroma.h
+src/ZVoxelType_Aroma.h
+src/ZVoxelExtension_FertileGround.h
 src/ZVoxelType_FertileGround.h
 src/ZVoxelType_Animal.h
 src/ZVoxelType_Concrete.h
