@@ -174,6 +174,20 @@ void ZVoxelWorld::AddSector( ZVoxelSector * Sector )
   Long x,y,z,Offset;
   ZVoxelSector * SectorPointer;
 
+  {
+	  int n;
+	  for( n = 0; n < 6; n++ )
+	  {
+		  ZVoxelSector *near_sec = FindSector( Sector->Pos_x + ZVoxelReactor::nbp6[n].x
+											,  Sector->Pos_y + ZVoxelReactor::nbp6[n].y
+											,  Sector->Pos_z + ZVoxelReactor::nbp6[n].z );
+		  if( near_sec )
+		  {
+			  Sector->near_sectors[n] = near_sec;
+			  near_sec->near_sectors[n^1] = Sector;
+		  }
+	  }
+  }
 
   // Adding to fast access hash
 
@@ -244,7 +258,12 @@ void ZVoxelWorld::RemoveSector( ZVoxelSector * Sector )
   if (Sector->GlobalList_Next) Sector->GlobalList_Next->GlobalList_Pred = Sector->GlobalList_Pred;
 
   // Zeroing fields
-
+  for( int i = 0; i < 6; i++ )
+  {
+	  if( Sector->near_sectors[i] )
+		  Sector->near_sectors[i]->near_sectors[i^1] = 0;
+	  Sector->near_sectors[i] = 0;
+  }
   Sector->Next = 0; Sector->Pred = 0; Sector->GlobalList_Next = 0; Sector->GlobalList_Pred = 0;
 
 }
@@ -2303,7 +2322,8 @@ bool ZVoxelWorld::SetVoxel_WithCullingUpdate(Long x, Long y, Long z, UShort Voxe
   // Computing memory offsets from sector start
 
   Offset[VOXEL_INCENTER] = (y & ZVOXELBLOCMASK_Y)       + ( (x & ZVOXELBLOCMASK_X)<<ZVOXELBLOCSHIFT_Y )       + ((z & ZVOXELBLOCMASK_Z) << (ZVOXELBLOCSHIFT_Y+ZVOXELBLOCSHIFT_X));
-
+  //if( Sector[VOXEL_INCENTER]->Data[Offset[VOXEL_INCENTER]].Data && VoxelValue)
+//	  DebugBreak();
   // Computing absolute memory pointer of blocks
   {
 	  int i = VOXEL_INCENTER; 
@@ -2353,10 +2373,88 @@ bool ZVoxelWorld::SetVoxel_WithCullingUpdate(Long x, Long y, Long z, UShort Voxe
 
   Sector[VOXEL_INCENTER]->Flag_IsModified |= ImportanceFactor;
 
-  Sector[VOXEL_INCENTER]->Culler->CullSingleVoxel( x, y, z );
+  Sector[VOXEL_INCENTER]->Culler->CullSingleVoxel(Sector[VOXEL_INCENTER], Offset[VOXEL_INCENTER]);
   return(true);
 }
 
+
+bool ZVoxelWorld::SetVoxel_WithCullingUpdate(ZVoxelSector *_Sector, ULong offset, UShort VoxelValue, UByte ImportanceFactor, bool CreateExtension, VoxelLocation * Location)
+{
+	ZVoxelSector::VoxelData * Voxel_Address[19];
+  ULong  Offset[19];
+  UShort VoxelState[19];
+  UShort Voxel;
+  //ZVoxelSector * Sector[19];
+  ZVoxelType ** VoxelTypeTable;
+  ZVoxelType * VoxelType;
+
+  UShort * ExtFaceState;
+  UShort * IntFaceState;
+  ZMemSize OtherInfos;
+
+  VoxelTypeTable = VoxelTypeManager->VoxelTable;
+
+  // Fetching sectors
+
+  if ( 0== (_Sector = _Sector) ) return(false);
+
+  // Computing memory offsets from sector start
+
+  Offset[VOXEL_INCENTER] = offset;
+  //if( _Sector->Data[Offset[VOXEL_INCENTER]].Data && VoxelValue)
+//	  DebugBreak();
+  // Computing absolute memory pointer of blocks
+  {
+	  int i = VOXEL_INCENTER; 
+	Voxel_Address[i]     = _Sector->Data + Offset[i];
+    Voxel = Voxel_Address[i]->Data;    VoxelType = VoxelTypeTable[Voxel];
+      VoxelState[i] = ( (Voxel==0) ? 1 : 0) 
+		     | ( VoxelType->Draw_FullVoxelOpacity ? 2 : 0 ) 
+			 | ( VoxelType->Draw_TransparentRendering ? 4 : 0 );
+  }
+  // Computing absolute
+  // Fetching Voxels and computing voxel state
+
+  // Delete Old voxel extended informations if any
+
+  Voxel = Voxel_Address[VOXEL_INCENTER]->Data;
+  OtherInfos = _Sector->Data[Offset[VOXEL_INCENTER]].OtherInfos;
+
+  if (OtherInfos)
+  {
+    VoxelType = VoxelTypeTable[Voxel];
+    if (VoxelType->Is_HasAllocatedMemoryExtension) VoxelType->DeleteVoxelExtension(OtherInfos);
+  }
+
+  // Storing Extension
+
+  VoxelType = VoxelTypeTable[VoxelValue];
+  if (CreateExtension)
+  {
+    Voxel_Address[VOXEL_INCENTER]->Data = 0; // Temporary set to 0 to prevent VoxelReactor for crashing while loading the wrong extension.
+    (*(_Sector->Data + Offset[VOXEL_INCENTER])).OtherInfos =(ZMemSize)VoxelType->CreateVoxelExtension();
+  }
+
+  // Storing Voxel
+
+  Voxel_Address[VOXEL_INCENTER]->Data = VoxelValue;
+  VoxelState[VOXEL_INCENTER] = ((VoxelValue==0) ? 1 : 0) | ( VoxelType->Draw_FullVoxelOpacity ? 2 : 0 ) | ( VoxelType->Draw_TransparentRendering ? 4 : 0 );
+
+	if (VoxelTypeTable[VoxelValue]->Is_Active) _Sector->Flag_IsActiveVoxels = true;
+
+  // Filling VoxelLocation if any
+
+  if ((Location))
+  {
+    Location->Sector = _Sector;
+    Location->Offset = offset;
+  }
+
+  _Sector->Flag_IsModified |= ImportanceFactor;
+
+  _Sector->Culler->CullSingleVoxel( _Sector, offset );
+  return(true);
+}
 
 
 void ZVoxelWorld::Purge(UShort VoxelType)

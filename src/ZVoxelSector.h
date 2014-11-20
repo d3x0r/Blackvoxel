@@ -106,38 +106,121 @@ DRAWFACE_LEFT    = 0x00001
 
 enum RelativeVoxelOrds
 {
-    VOXEL_LEFT     //0
-   , VOXEL_RIGHT //1
-   , VOXEL_INFRONT //2
-   , VOXEL_BEHIND  //3
-   , VOXEL_ABOVE   //4
-   , VOXEL_BELOW   //5
+    VOXEL_INCENTER //0
+   , VOXEL_LEFT     //1
+   , VOXEL_RIGHT //2
+   , VOXEL_INFRONT //3
+   , VOXEL_AHEAD = VOXEL_INFRONT // 3
+   , VOXEL_BEHIND  //4
+   , VOXEL_ABOVE   //5
+   , VOXEL_BELOW   //6
 
-   , VOXEL_LEFT_ABOVE //6
-   , VOXEL_RIGHT_ABOVE //7
-   , VOXEL_INFRONT_ABOVE //8
-   , VOXEL_BEHIND_ABOVE  //9
-   , VOXEL_ABOVE_AHEAD   //10
-   , VOXEL_BELOW_AHEAD   //11
+   , VOXEL_LEFT_ABOVE //7
+   , VOXEL_ABOVE_LEFT = VOXEL_LEFT_ABOVE
+   , VOXEL_RIGHT_ABOVE //8
+   , VOXEL_ABOVE_RIGHT = VOXEL_RIGHT_ABOVE
 
-   , VOXEL_LEFT_BELOW //12
-   , VOXEL_RIGHT_BELOW //13
-   , VOXEL_INFRONT_BELOW //14
-   , VOXEL_BEHIND_BELOW  //15
-   , VOXEL_ABOVE_BEHIND   //16
-   , VOXEL_BELOW_BEHIND   //17
+   , VOXEL_INFRONT_ABOVE //9
+   , VOXEL_AHEAD_ABOVE = VOXEL_INFRONT_ABOVE
+   , VOXEL_ABOVE_AHEAD = VOXEL_INFRONT_ABOVE
 
-   , VOXEL_INCENTER //18
+   , VOXEL_BEHIND_ABOVE  //10
+   , VOXEL_ABOVE_BEHIND = VOXEL_BEHIND_ABOVE
+
+   , VOXEL_LEFT_AHEAD   //11
+   , VOXEL_AHEAD_LEFT = VOXEL_LEFT_AHEAD
+
+   , VOXEL_RIGHT_AHEAD   //12
+   , VOXEL_AHEAD_RIGHT = VOXEL_RIGHT_AHEAD
+
+   , VOXEL_LEFT_BELOW //13
+   , VOXEL_BELOW_LEFT = VOXEL_LEFT_BELOW
+   , VOXEL_RIGHT_BELOW //14
+   , VOXEL_BELOW_RIGHT = VOXEL_RIGHT_BELOW
+   , VOXEL_INFRONT_BELOW //15
+   , VOXEL_AHEAD_BELOW = VOXEL_INFRONT_BELOW
+   , VOXEL_BELOW_AHEAD = VOXEL_INFRONT_BELOW
+   , VOXEL_BEHIND_BELOW  //16
+   , VOXEL_BELOW_BEHIND = VOXEL_BEHIND_BELOW
+
+   , VOXEL_LEFT_BEHIND   //17
+   , VOXEL_BEHIND_LEFT = VOXEL_LEFT_BEHIND
+   , VOXEL_BEHIND_RIGHT   //18
+   , VOXEL_RIGHT_BEHIND = VOXEL_BEHIND_RIGHT
+
+
+   , VOXEL_LEFT_AHEAD_ABOVE   // 19
+   , VOXEL_RIGHT_AHEAD_ABOVE  // 20
+   , VOXEL_LEFT_AHEAD_BELOW   // 21
+   , VOXEL_RIGHT_AHEAD_BELOW  // 22
+   , VOXEL_LEFT_BEHIND_ABOVE  // 23
+   , VOXEL_RIGHT_BEHIND_ABOVE // 24
+   , VOXEL_LEFT_BEHIND_BELOW  // 25
+   , VOXEL_RIGHT_BEHIND_BELOW // 26
+
+   ,  VOXEL_LEFT_ABOVE_AHEAD  = VOXEL_LEFT_AHEAD_ABOVE   // 19
+   , VOXEL_RIGHT_ABOVE_AHEAD  = VOXEL_RIGHT_AHEAD_ABOVE	 // 20
+   ,  VOXEL_LEFT_BELOW_AHEAD  = VOXEL_LEFT_AHEAD_BELOW 	 // 21
+   , VOXEL_RIGHT_BELOW_AHEAD  = VOXEL_RIGHT_AHEAD_BELOW	 // 22
+   ,  VOXEL_LEFT_ABOVE_BEHIND = VOXEL_LEFT_BEHIND_ABOVE  // 23
+   , VOXEL_RIGHT_ABOVE_BEHIND = VOXEL_RIGHT_BEHIND_ABOVE // 24
+   ,  VOXEL_LEFT_BELOW_BEHIND = VOXEL_LEFT_BEHIND_BELOW  // 25
+   , VOXEL_RIGHT_BELOW_BEHIND = VOXEL_RIGHT_BEHIND_BELOW // 26
+
+   , VOXEL_ABOVE_AHEAD_LEFT   = VOXEL_LEFT_AHEAD_ABOVE   // 19
+   , VOXEL_ABOVE_AHEAD_RIGHT  = VOXEL_RIGHT_AHEAD_ABOVE	 // 20
+   , VOXEL_BELOW_AHEAD_LEFT   = VOXEL_LEFT_AHEAD_BELOW 	 // 21
+   , VOXEL_BELOW_AHEAD_RIGHT  = VOXEL_RIGHT_AHEAD_BELOW	 // 22
+   , VOXEL_ABOVE_BEHIND_LEFT  = VOXEL_LEFT_BEHIND_ABOVE  // 23 
+   , VOXEL_ABOVE_BEHIND_RIGHT = VOXEL_RIGHT_BEHIND_ABOVE // 24
+   , VOXEL_BELOW_BEHIND_LEFT  = VOXEL_LEFT_BEHIND_BELOW  // 25 
+   , VOXEL_BELOW_BEHIND_RIGHT = VOXEL_RIGHT_BEHIND_BELOW // 26
+
+   ,  VOXEL_AHEAD_ABOVE_LEFT  = VOXEL_LEFT_AHEAD_ABOVE   // 19
+   ,  VOXEL_AHEAD_ABOVE_RIGHT = VOXEL_RIGHT_AHEAD_ABOVE	 // 20
+   ,  VOXEL_AHEAD_BELOW_LEFT  = VOXEL_LEFT_AHEAD_BELOW 	 // 21
+   ,  VOXEL_AHEAD_BELOW_RIGHT = VOXEL_RIGHT_AHEAD_BELOW	 // 22
+   , VOXEL_BEHIND_ABOVE_LEFT  = VOXEL_LEFT_BEHIND_ABOVE  // 23 
+   , VOXEL_BEHIND_ABOVE_RIGHT = VOXEL_RIGHT_BEHIND_ABOVE // 24
+   , VOXEL_BEHIND_BELOW_LEFT  = VOXEL_LEFT_BEHIND_BELOW  // 25 
+   , VOXEL_BEHIND_BELOW_RIGHT = VOXEL_RIGHT_BEHIND_BELOW // 26
+
+   , VOXEL_ABOVE_LEFT_AHEAD   = VOXEL_LEFT_AHEAD_ABOVE   // 19
+   , VOXEL_ABOVE_RIGHT_AHEAD  = VOXEL_RIGHT_AHEAD_ABOVE	 // 20
+   , VOXEL_BELOW_LEFT_AHEAD   = VOXEL_LEFT_AHEAD_BELOW 	 // 21
+   , VOXEL_BELOW_RIGHT_AHEAD  = VOXEL_RIGHT_AHEAD_BELOW	 // 22
+   , VOXEL_ABOVE_LEFT_BEHIND  = VOXEL_LEFT_BEHIND_ABOVE  // 23 
+   , VOXEL_ABOVE_RIGHT_BEHIND = VOXEL_RIGHT_BEHIND_ABOVE // 24
+   , VOXEL_BELOW_LEFT_BEHIND  = VOXEL_LEFT_BEHIND_BELOW  // 25 
+   , VOXEL_BELOW_RIGHT_BEHIND = VOXEL_RIGHT_BEHIND_BELOW // 26
+
+   , VOXEL_AHEAD_LEFT_ABOVE   = VOXEL_LEFT_AHEAD_ABOVE   // 19
+   , VOXEL_AHEAD_RIGHT_ABOVE  = VOXEL_RIGHT_AHEAD_ABOVE	 // 20
+   , VOXEL_AHEAD_LEFT_BELOW   = VOXEL_LEFT_AHEAD_BELOW 	 // 21
+   , VOXEL_AHEAD_RIGHT_BELOW  = VOXEL_RIGHT_AHEAD_BELOW	 // 22
+   , VOXEL_BEHIND_LEFT_ABOVE  = VOXEL_LEFT_BEHIND_ABOVE  // 23 
+   , VOXEL_BEHIND_RIGHT_ABOVE = VOXEL_RIGHT_BEHIND_ABOVE // 24
+   , VOXEL_BEHIND_LEFT_BELOW  = VOXEL_LEFT_BEHIND_BELOW  // 25 
+   , VOXEL_BEHIND_RIGHT_BELOW = VOXEL_RIGHT_BEHIND_BELOW // 26
+
 };
+
+
 
 class ZVoxelTypeManager;
 class ZLightSpeedRandom;
 
 class ZVoxelSector : public ZObject
 {
+
 	void ZVoxelSector::DefaultInit( void );
 
   public:
+	static ULong RelativeVoxelOffsets_Unwrapped[27];
+	static FACEDRAW_Operations RelativeVoxelOffset_Fixups[27]; // (ordered the same way voxel order is?)... but as a bitmask of draw ops
+	static ULong RelativeVoxelOffsets_Wrapped[27];
+	static int VoxelSectorReactorMapTemp[64]; // for debugging purposes... map reactor maps to physical 27 3x3x3 maps
+	const static int VoxelFaceGroups[6][9];
     static ULong SectorsInMemory;
 
     ZVoxelTypeManager * VoxelTypeManager;
@@ -147,6 +230,8 @@ class ZVoxelSector : public ZObject
 
     ZVoxelSector * GlobalList_Next;
     ZVoxelSector * GlobalList_Pred;
+
+	ZVoxelSector *near_sectors[6];
 
     Short Handle_x, Handle_y, Handle_z;
     Long Pos_x,Pos_y,Pos_z;
@@ -355,6 +440,58 @@ public:
 
       return( IsModified ); // Save only if sector is modified AND if modifications are rated important enough.
     }
+
+	static inline void GetNearVoxel( ZVoxelSector *Sector, ULong origin_offset, ZVoxelSector **SectorOut, ULong &offsetOut, RelativeVoxelOrds direction )
+	{
+		SectorOut[0] = Sector;
+		offsetOut = origin_offset + ZVoxelSector:: RelativeVoxelOffsets_Unwrapped[direction];
+		FACEDRAW_Operations fixup = ZVoxelSector::RelativeVoxelOffset_Fixups[direction];
+		if( ( fixup & DRAWFACE_LEFT ) && !(origin_offset&(ZVOXELBLOCMASK_X<<ZVOXELBLOCSHIFT_Y)) )  
+		{
+			offsetOut += ( ZVOXELBLOCSIZE_X ) * ZVOXELBLOCSIZE_Y;
+			SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_LEFT-1];
+		}
+		if( ( fixup & DRAWFACE_RIGHT ) && ( !((origin_offset&(ZVOXELBLOCMASK_X<<ZVOXELBLOCSHIFT_Y))^(ZVOXELBLOCMASK_X<<ZVOXELBLOCSHIFT_Y) ) ) )  
+		{
+			if( SectorOut[0] )
+			{
+				offsetOut -= ( ZVOXELBLOCSIZE_X ) * ZVOXELBLOCSIZE_Y;
+				SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_RIGHT-1];
+			}
+		}
+		if( ( fixup & DRAWFACE_AHEAD ) && ( !((origin_offset&(ZVOXELBLOCMASK_Z<<(ZVOXELBLOCSHIFT_X+ZVOXELBLOCSHIFT_Y))^(ZVOXELBLOCMASK_Z<<(ZVOXELBLOCSHIFT_X+ZVOXELBLOCSHIFT_Y) )  ) )) )  
+		{
+			if( SectorOut[0] )
+			{
+				offsetOut -= ( ZVOXELBLOCSIZE_Z ) * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_X;
+				SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_AHEAD-1];
+			}
+		}
+		if( ( fixup & DRAWFACE_BEHIND ) && ( !(origin_offset&(ZVOXELBLOCMASK_Z<<(ZVOXELBLOCSHIFT_X+ZVOXELBLOCSHIFT_Y)) ) ) )  
+		{
+			if( SectorOut[0] )
+			{
+				offsetOut += ( ZVOXELBLOCSIZE_Z ) * ZVOXELBLOCSIZE_Y * ZVOXELBLOCSIZE_X;
+				SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_BEHIND-1];
+			}
+		}
+		if( ( fixup & DRAWFACE_ABOVE ) && ( !((origin_offset&(ZVOXELBLOCMASK_Y))^(ZVOXELBLOCMASK_Y) ) ) )
+		{
+			if( SectorOut[0] )
+			{
+				offsetOut -= ZVOXELBLOCSIZE_Y;
+				SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_ABOVE-1];
+			}
+		}
+		if( ( fixup & DRAWFACE_BELOW ) && (!(origin_offset&(ZVOXELBLOCMASK_Y)) ) )  
+		{
+			if( SectorOut[0] )
+			{
+				offsetOut += ZVOXELBLOCSIZE_Y;
+				SectorOut[0] = SectorOut[0]->near_sectors[VOXEL_BELOW-1];
+			}
+		}
+	}
 
     // Saving
 
