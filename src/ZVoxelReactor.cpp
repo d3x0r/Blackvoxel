@@ -59,6 +59,9 @@
 #  include "z/ZGenericTable.h"
 #endif
 
+#ifndef Z_ZACTIVEVOXELINTERFACE_H
+#  include "ZActiveVoxelInterface.h"
+#endif
 #include <salty_generator.h>
 ZLightSpeedRandom ZVoxelReactor::Random;
 random_context *ZVoxelReactor::Random2;
@@ -511,8 +514,16 @@ void ZVoxelReactor::ProcessSectors( double LastLoopTime )
   ZVoxelSector * Sector;
   bool LowActivityTrigger;
   ZActor * SelectedActor;
+  ZActiveVoxelInterface ActiveVoxelInterface;
 
   ZVector3d PlayerLocation;
+
+  // Active voxel interface init.
+
+  ActiveVoxelInterface.GameEnv = GameEnv;
+  ActiveVoxelInterface.VoxelTypeManager = VoxelTypeManager;
+  ActiveVoxelInterface.World = World;
+  ActiveVoxelInterface._xbp = (ZActiveVoxelInterface::ZBlocPosN *)xbp6_nc;
 
   // FireMine
 
@@ -2685,6 +2696,29 @@ void ZVoxelReactor::ProcessSectors( double LastLoopTime )
 
                               */
                            }
+                           break;
+
+
+
+                           // *** Active voxels mapped on voxeltype ***
+                           //
+                           // This was made to make modding easier to do.
+                           //
+                           // Unfortunately, that's also slower than adding a snippet of code in this switch.
+                           // There is no fast access to neigbor voxels and a little overhead for parameters
+                           // and function call.
+                           // This method is perfectly suitable and the recommanded way for voxels that are only
+                           // few in the world.
+                           // For "massive" voxeltype presence where you want more speed, consider implementing it
+                           // in the switch in this code file.
+
+                   default:IsActiveVoxels = true;
+                           ActiveVoxelInterface.Coords.x = RSx + x;
+                           ActiveVoxelInterface.Coords.y = RSy + y;
+                           ActiveVoxelInterface.Coords.z = RSz + z;
+                           ActiveVoxelInterface.Location.Sector = Sector;
+                           ActiveVoxelInterface.Location.Offset = VoxelP - DisplayData;
+                           VoxelTypeManager->VoxelTable[VoxelType]->ActiveProcess(&ActiveVoxelInterface);
                            break;
 
 
