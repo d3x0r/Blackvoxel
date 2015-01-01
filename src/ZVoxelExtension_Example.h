@@ -55,7 +55,7 @@ class ZVoxelExtension_Example : public ZVoxelExtension
 
   ZVoxelExtension_Example()
   {
-    ExtensionType = Extension_GeneralModing;
+    ExtensionType = 0;//Extension_GeneralModing;
 
     // Init the storage.
 

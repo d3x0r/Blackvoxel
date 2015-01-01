@@ -1633,7 +1633,7 @@ Bool ZVoxelTypeManager::LoadVoxelTypes()
       case 237: VoxelType = new ZVoxelType_Example(i);               break;
 
 	  case 236: VoxelType = new ZVoxelType_Food(i); break;
-	  case 237: VoxelType = new ZVoxelType_Food(i); break;
+	  //case 237: VoxelType = new ZVoxelType_Food(i); break;
 	  case 238: VoxelType = new ZVoxelType_Food(i); break;
 	  case 239: VoxelType = new ZVoxelType_FertileGround(i); break;
 	  case 240: VoxelType = new ZVoxelType_Animal(i); break;

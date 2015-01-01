@@ -37,7 +37,6 @@ bool ZVoxelExtension::_ThrowExtension(ZStream_SpecialRamStream * Stream, ZMemSiz
 
   return(Ok);
 }
-#endif
 
 
 ULong ZVoxelExtension::ExtensionCharCodes[] = {	

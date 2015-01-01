@@ -75,12 +75,6 @@ class ZVoxelExtension
 
   static ULong ExtensionCharCodes[Extension_Count];
 
-  virtual ULong GetExtensionID() {return(0);}
-  virtual bool Save(ZStream_SpecialRamStream * Stream)=0;
-  virtual bool Load(ZStream_SpecialRamStream * Stream)=0;
-  virtual void SetGameEnv(ZGame * GameEnv) { }
-  virtual ZVoxelExtension * GetNewCopy() { return(0); }
-
   protected:
 
     bool _ThrowExtension(ZStream_SpecialRamStream * Stream, ZMemSize ExtensionSize);
